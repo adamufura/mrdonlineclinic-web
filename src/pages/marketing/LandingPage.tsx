@@ -238,7 +238,7 @@ export default function LandingPage() {
             </div>
           </header>
 
-          <div className="w-full max-w-[min(60rem,100%)] justify-self-start sm:max-w-[min(64rem,100%)] lg:col-start-1 lg:row-start-2 xl:max-w-none 2xl:max-w-none">
+          <div className="w-full max-w-[min(80rem,100%)] justify-self-start sm:max-w-[min(86rem,100%)] lg:col-start-1 lg:row-start-2 xl:max-w-none 2xl:max-w-none">
             <HeroSearchBar />
           </div>
 

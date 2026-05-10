@@ -55,9 +55,9 @@
 }
 
 @layer utilities {
-  /* Marketing shell width (~1380px cap + gutter): navbar, hero, landing sections */
+  /* Marketing shell width (~1620px cap + gutter): navbar, hero, landing sections */
   .max-w-site {
-    max-width: min(86.25rem, calc(100vw - 2rem));
+    max-width: min(101.25rem, calc(100vw - 2rem));
   }
 
   /* Subtle grid + faint diagonal motif (closer to reference telemedicine kit) */
@@ -120,10 +120,10 @@
     box-shadow: var(--shadow-search);
   }
 
-  /** Hero search — compact kit bar: light lift, no heavy float */
+  /** Hero search — subtle edge definition (lighter than earlier kit) */
   .shadow-hero-search-kit {
     box-shadow:
-      0 8px 28px -4px rgb(14 22 61 / 0.07),
-      0 2px 8px -2px rgb(14 22 61 / 0.04);
+      0 2px 8px -2px rgb(14 22 61 / 0.05),
+      0 1px 3px -1px rgb(14 22 61 / 0.035);
   }
 }

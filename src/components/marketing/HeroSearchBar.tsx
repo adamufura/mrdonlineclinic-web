@@ -17,10 +17,10 @@ function formatHeroDate(iso: string): string {
   return isValid(parsed) ? format(parsed, 'MMM d, yyyy') : '';
 }
 
-/** Widest search / mid location / narrowest date */
-const flexSearch = 'lg:flex-[9_1_0%]';
-const flexLocation = 'lg:flex-[5.5_1_0%]';
-const flexDate = 'lg:flex-[2.85_1_0%]';
+/** Search column takes most of the row; location/date keep readable mins */
+const flexSearch = 'lg:min-w-[14rem] lg:flex-[13_1_0%]';
+const flexLocation = 'lg:min-w-[9.5rem] lg:flex-[6.5_1_0%]';
+const flexDate = 'lg:min-w-[11rem] lg:flex-[6_1_0%]';
 
 const iconSize = 'size-[1.125rem]';
 
@@ -69,10 +69,15 @@ export function HeroSearchBar({ className }: { className?: string }) {
     'lg:min-h-0 lg:min-w-0 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:shadow-none lg:focus-within:border-transparent lg:focus-within:shadow-none',
   );
 
-  /** Same line box for inputs + date affordance so placeholders align vertically */
+  /** Same line box for text inputs */
   const inputCls = cn(
     'min-h-10 min-w-0 flex-1 truncate border-0 bg-transparent py-0 text-[0.9375rem] font-normal leading-[1.375] text-brand-navy outline-none',
     'placeholder:font-normal placeholder:text-[#9ca3af]',
+  );
+
+  /** Visually match adjacent `<input>` rows; `items-center` + `leading-[1.375]` aligns with placeholder text metrics */
+  const dateLabelCls = cn(
+    'flex min-h-10 min-w-0 flex-1 items-center truncate border-0 bg-transparent py-0 text-[0.9375rem] font-normal leading-[1.375] outline-none',
   );
 
   const dividerBar =
@@ -86,7 +91,7 @@ export function HeroSearchBar({ className }: { className?: string }) {
       onSubmit={onSubmit}
       className={cn(
         'flex w-full flex-col gap-2.5 rounded-xl border border-[#eef1f6] bg-white p-3 shadow-hero-search-kit',
-        'mx-auto max-w-full min-[440px]:max-w-none sm:mx-0 sm:max-w-4xl md:max-w-[60rem]',
+        'mx-auto max-w-full min-[440px]:max-w-none sm:mx-0 sm:max-w-6xl md:max-w-[76rem]',
         'lg:mx-0 lg:max-w-full lg:min-h-[4.875rem] lg:flex-row lg:flex-nowrap lg:items-center lg:gap-0 lg:overflow-hidden',
         'lg:rounded-2xl lg:border lg:border-[#eef1f6] lg:p-0 lg:py-4 lg:pl-6 lg:pr-6 lg:shadow-hero-search-kit lg:scroll-mt-28',
         'xl:min-h-[5rem]',
@@ -141,16 +146,11 @@ export function HeroSearchBar({ className }: { className?: string }) {
         className={cn(
           segmentBase,
           flexDate,
-          'cursor-pointer select-none gap-2.5 lg:gap-2.5 lg:pl-4 lg:pr-2',
+          'cursor-pointer select-none lg:items-center lg:pl-4 lg:pr-2',
           'outline-none ring-brand-cyan/25 focus-visible:ring-2 focus-visible:ring-offset-0',
         )}
       >
-        <Calendar
-          className={cn(iconSize, iconCls, 'pointer-events-none shrink-0 self-center')}
-          strokeWidth={ICON_STROKE}
-          aria-hidden
-        />
-
+        {/* Native date input must not be a flex item — it skews cross-axis alignment in some browsers */}
         <input
           ref={dateInputRef}
           id="hero-date-native"
@@ -160,19 +160,26 @@ export function HeroSearchBar({ className }: { className?: string }) {
           max="2099-12-31"
           onChange={(e) => setDateIso(e.target.value)}
           tabIndex={-1}
-          className="pointer-events-none fixed left-[-9999px] top-auto m-[-1px] size-px overflow-hidden border-0 p-0 opacity-0 whitespace-nowrap"
+          aria-hidden
+          className="pointer-events-none absolute left-0 top-0 m-[-1px] size-px overflow-hidden border-0 p-0 opacity-0"
         />
 
-        {/* One line, same metrics as `<input>` — nested blocks broke vertical center vs Location */}
-        <span
-          className={cn(
-            inputCls,
-            'tabular-nums',
-            displayedDate ? 'text-brand-navy' : 'text-[#9ca3af]',
-          )}
-        >
-          {displayedDate || 'Date'}
-        </span>
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <Calendar
+            className={cn(iconSize, iconCls, 'pointer-events-none shrink-0')}
+            strokeWidth={ICON_STROKE}
+            aria-hidden
+          />
+          <span
+            className={cn(
+              dateLabelCls,
+              'tabular-nums',
+              displayedDate ? 'text-brand-navy' : 'text-[#9ca3af]',
+            )}
+          >
+            {displayedDate || 'Date'}
+          </span>
+        </div>
       </div>
 
       <div className="flex w-full shrink-0 justify-center px-1 max-lg:pt-1 lg:w-auto lg:items-center lg:self-center lg:pl-4 lg:pr-1">
