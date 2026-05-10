@@ -1,24 +1,37 @@
-import { useQuery } from '@tanstack/react-query';
+import { useCallback, useRef, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import {
+  Bone,
+  Brain,
   Building2,
   CalendarCheck,
+  CalendarDays,
   Check,
+  ChevronLeft,
+  ChevronRight,
   CircleCheck,
   ClipboardList,
+  Droplets,
+  Ear,
+  Eye,
+  FlaskConical,
+  Heart,
   Home,
+  Minus,
   Pill,
   Plus,
   Search,
+  Shield,
+  Smile,
+  Smartphone,
   Star,
+  Store,
   User,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { HeroSearchBar } from '@/components/marketing/HeroSearchBar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { listPractitionersDirectory, type PractitionerDirectoryItem } from '@/features/practitioners/public-api';
-import { listPublicSpecialties, type SpecialtyDto } from '@/features/specialties/api';
 import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/router/routes';
 
@@ -27,6 +40,10 @@ const DOCTOR_IMG =
 /** How it works — verified Unsplash asset (telehealth-friendly clinical portrait) */
 const HOW_IT_WORKS_IMG =
   'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=900&q=85';
+
+/** Landing FAQ — doctor with clipboard/paperwork (friendly stock portrait). */
+const FAQ_PANEL_IMG =
+  'https://images.unsplash.com/photo-1645066928295-2506defde470?auto=format&fit=crop&w=960&q=85';
 
 const HOW_IT_WORKS_STEPS = [
   {
@@ -131,36 +148,285 @@ const TESTIMONIALS = [
   },
 ];
 
-function PractitionerMiniCard({ p }: { p: PractitionerDirectoryItem }) {
-  const id = String(p._id);
-  const name = `${p.firstName} ${p.lastName}`;
-  const rating = typeof p.averageRating === 'number' ? p.averageRating.toFixed(1) : '—';
+const SERVICE_SHORTCUTS: {
+  label: string;
+  href: string;
+  Icon: LucideIcon;
+  tone: string;
+}[] = [
+  { label: 'Book Appointment', href: ROUTES.findDoctor, Icon: CalendarDays, tone: 'bg-violet-100 text-violet-600' },
+  { label: 'Lab Testing Services', href: ROUTES.contact, Icon: FlaskConical, tone: 'bg-emerald-100 text-emerald-600' },
+  { label: 'Medicines & Supplies', href: `${ROUTES.home}#pharmacy`, Icon: Store, tone: 'bg-cyan-100 text-cyan-600' },
+  { label: 'Hospitals / Clinics', href: ROUTES.findDoctor, Icon: Building2, tone: 'bg-rose-100 text-rose-600' },
+  { label: 'Health Care Services', href: `${ROUTES.home}#patients`, Icon: Shield, tone: 'bg-green-100 text-green-600' },
+  { label: "Talk to Doctor's", href: ROUTES.findDoctor, Icon: Smartphone, tone: 'bg-pink-100 text-pink-600' },
+];
+
+const SPECIALITY_SHOWCASE: { name: string; Icon: LucideIcon; highlight?: boolean }[] = [
+  { name: 'Cardiology', Icon: Heart },
+  { name: 'Neurology', Icon: Brain },
+  { name: 'Urology', Icon: Droplets },
+  { name: 'Orthopedic', Icon: Bone },
+  { name: 'Dentist', Icon: Smile, highlight: true },
+  { name: 'Ophthalmology', Icon: Eye },
+  { name: 'Pediatrics', Icon: User },
+  { name: 'ENT', Icon: Ear },
+];
+
+const LANDING_FAQ: { q: string; a: string }[] = [
+  {
+    q: 'How Do I Book An Appointment With A Doctor?',
+    a:
+      'Yes, simply visit our website and log in or create an account. Search for a doctor based on specialization, location, or availability & confirm your booking.',
+  },
+  {
+    q: 'Can I Request A Specific Doctor When Booking My Appointment?',
+    a:
+      'Yes. Every booking is tied to the practitioner profile you selected. Use search and filters to find the clinician you prefer before you pick a time.',
+  },
+  {
+    q: 'What Should I Do If I Need To Cancel Or Reschedule My Appointment?',
+    a:
+      'Open Appointments from your patient dashboard as early as possible, then use reschedule or cancel. Policies may vary slightly by clinician—your confirmation email summarizes the timing.',
+  },
+  {
+    q: "What If I'm Running Late For My Appointment?",
+    a:
+      'Message your clinician through the secure thread linked to your appointment. They will advise whether to join late, switch to messaging, or rebook.',
+  },
+  {
+    q: 'Can I Book Appointments For Family Members Or Dependents?',
+    a:
+      'Where your account allows dependents or linked profiles you can book on their behalf; otherwise register a separate patient profile so each person has accurate medical records.',
+  },
+];
+
+function LandingFaqSection() {
+  const [openIndex, setOpenIndex] = useState(0);
+
   return (
-    <Card className="overflow-hidden border-brand-stroke-soft shadow-sm">
-      <CardHeader className="pb-2">
-        <div className="flex items-start gap-3">
-          {p.profilePhotoUrl ? (
-            <img src={p.profilePhotoUrl} alt="" className="size-12 rounded-full object-cover" />
-          ) : (
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted text-sm font-semibold text-brand-body">
-              {p.firstName[0]}
-              {p.lastName[0]}
+    <section id="faq" className="scroll-mt-28 border-t border-brand-stroke-soft bg-white py-14 lg:py-20">
+      <div className="mx-auto w-full max-w-site px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 max-w-[40rem] lg:mb-14">
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand-hero-blue">Get Your Answer</p>
+          <h2 className="mt-2 text-[1.75rem] font-extrabold leading-snug text-brand-navy sm:text-[2.125rem] lg:text-[2.35rem]">
+            Frequently Asked Questions
+            <sup className="-top-[2px] relative ml-0.5 inline-flex align-baseline text-brand-hero-blue" aria-hidden>
+              <Plus className="size-[14px] sm:size-4 lg:size-[1.05rem]" strokeWidth={2.9} />
+            </sup>
+          </h2>
+        </div>
+
+        <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-24">
+          <figure className="relative isolate mx-auto w-full max-w-lg lg:mx-0 lg:max-w-none">
+            {/* Decorative frames behind the photo only (no negative top — avoids crawling under FAQ title). */}
+            <span
+              className="pointer-events-none absolute bottom-[-3%] left-[-3%] right-[-4%] top-[8%] z-0 hidden rounded-2xl border border-neutral-300/50 sm:block"
+              aria-hidden
+            />
+            <span
+              className="pointer-events-none absolute bottom-[-2%] left-[-6%] right-[1%] top-[14%] z-0 hidden rounded-2xl border border-neutral-300/35 sm:block"
+              aria-hidden
+            />
+            <span
+              className="pointer-events-none absolute bottom-[2%] left-[2%] right-[-5%] top-[18%] z-0 hidden rounded-2xl border border-neutral-200/75 sm:block"
+              aria-hidden
+            />
+
+            <div className="relative z-[1] overflow-hidden rounded-2xl ring-1 ring-brand-stroke-soft/90 shadow-hero-search-kit">
+              <img
+                src={FAQ_PANEL_IMG}
+                alt="Doctor in a white coat holding a clipboard with patient notes."
+                width={960}
+                height={1200}
+                sizes="(min-width: 1024px) 46vw, 100vw"
+                className="aspect-[5/4] h-auto w-full object-cover object-[50%_12%] sm:aspect-[4/3]"
+                loading="lazy"
+                decoding="async"
+              />
+              <figcaption className="pointer-events-none absolute bottom-5 left-4 z-[2] sm:bottom-7 sm:left-6">
+                <div className="flex items-center gap-3 rounded-2xl bg-white/98 px-5 py-3.5 shadow-float ring-1 ring-brand-stroke-soft/85">
+                  <span className="text-2xl select-none" aria-hidden>
+                    😊
+                  </span>
+                  <div className="text-left leading-tight">
+                    <p className="text-lg font-extrabold text-brand-navy">95k+</p>
+                    <p className="text-xs font-semibold text-brand-body">Happy Patients</p>
+                  </div>
+                </div>
+              </figcaption>
             </div>
-          )}
-          <div className="min-w-0">
-            <CardTitle className="truncate text-base font-bold text-brand-navy">{name}</CardTitle>
-            <CardDescription className="text-brand-body">
-              ★ {rating} ({p.totalReviews ?? 0}) · {p.yearsOfExperience ?? '—'} yrs
-            </CardDescription>
+          </figure>
+
+          <div className="flex min-w-0 flex-col gap-3.5">
+            {LANDING_FAQ.map((item, idx) => {
+              const expanded = openIndex === idx;
+              const panelId = `landing-faq-panel-${idx}`;
+              const headingId = `landing-faq-heading-${idx}`;
+              return (
+                <div
+                  key={item.q}
+                  className={cn(
+                    'overflow-hidden rounded-2xl border transition-[box-shadow,background-color,border-color]',
+                    expanded
+                      ? 'border-brand-stroke-soft/70 bg-white shadow-float ring-1 ring-neutral-100/90'
+                      : 'border-transparent bg-[#ebf6fc]',
+                  )}
+                >
+                  <button
+                    type="button"
+                    id={headingId}
+                    aria-expanded={expanded}
+                    aria-controls={panelId}
+                    onClick={() => setOpenIndex(idx)}
+                    className={cn(
+                      'flex w-full items-center gap-4 px-4 py-4 text-left outline-none ring-brand-cyan/30 transition focus-visible:ring-2 sm:px-5 sm:py-[1.05rem]',
+                      expanded ? 'bg-white pb-3' : 'hover:bg-[#e3f3fb]',
+                    )}
+                  >
+                    <span className="min-w-0 flex-1 text-[0.95rem] font-bold leading-snug text-brand-navy sm:text-base">
+                      {item.q}
+                    </span>
+                    <span
+                      className={cn(
+                        'flex size-10 shrink-0 items-center justify-center rounded-lg transition',
+                        expanded
+                          ? 'bg-brand-hero-blue text-white shadow-sm'
+                          : 'bg-brand-landing text-brand-navy shadow-inner ring-1 ring-sky-200/90',
+                      )}
+                      aria-hidden
+                    >
+                      {expanded ? <Minus className="size-5" strokeWidth={2.5} /> : <Plus className="size-5" strokeWidth={2.6} />}
+                    </span>
+                  </button>
+                  <div
+                    id={panelId}
+                    role="region"
+                    aria-labelledby={headingId}
+                    hidden={!expanded}
+                    className="bg-white px-4 pb-5 pt-1 sm:px-5 sm:pb-6"
+                  >
+                    <p className="text-[0.875rem] font-normal leading-relaxed text-brand-body sm:text-[0.9375rem] sm:leading-relaxed">{item.a}</p>
+                  </div>
+                </div>
+              );
+            })}
+
+            <p className="pt-5 text-center text-sm lg:text-left">
+              <Link to={ROUTES.faq} className="font-semibold text-brand-hero-blue underline-offset-4 hover:text-brand-navy hover:underline">
+                Read more on our FAQ page
+              </Link>
+            </p>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <Button asChild variant="outline" size="sm" className="w-full border-brand-stroke-strong/30 font-semibold text-brand-navy">
-          <Link to={ROUTES.findDoctorProfile(id)}>View profile</Link>
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
+  );
+}
+
+function LandingSpecialtiesSection() {
+  const railRef = useRef<HTMLDivElement>(null);
+  const step = useCallback(() => {
+    const w = railRef.current?.offsetWidth ?? 280;
+    return Math.round(w * 0.42);
+  }, []);
+
+  const scrollRail = useCallback(
+    (dir: -1 | 1) => {
+      railRef.current?.scrollBy({ left: dir * step(), behavior: 'smooth' });
+    },
+    [step],
+  );
+
+  return (
+    <section id="specialties" className="scroll-mt-28 border-y border-brand-stroke-soft bg-[#fafcfe] py-12 lg:py-16">
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-10">
+        <div className="mb-14 grid grid-cols-2 gap-4 sm:mb-18 sm:grid-cols-3 sm:gap-5 lg:mb-24 lg:grid-cols-6 lg:gap-7 xl:mb-28 xl:gap-8">
+          {SERVICE_SHORTCUTS.map(({ label, href, Icon, tone }) => (
+            <Link
+              key={label}
+              to={href}
+              className="group flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl bg-white px-2 py-4 text-center shadow-hero-search-kit ring-1 ring-brand-stroke-soft/80 transition-[box-shadow,transform,background-color] hover:-translate-y-0.5 hover:bg-orange-50/40 hover:shadow-md sm:gap-3.5"
+            >
+              <span
+                className={cn(
+                  'flex size-[3rem] shrink-0 items-center justify-center rounded-full sm:size-14',
+                  tone,
+                  'transition group-hover:ring-2 group-hover:ring-white/70',
+                )}
+              >
+                <Icon className="size-[1.35rem] sm:size-[1.5rem]" strokeWidth={1.85} aria-hidden />
+              </span>
+              <span className="text-[0.6875rem] font-semibold leading-tight text-brand-navy sm:text-[0.8125rem]">{label}</span>
+            </Link>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <h2 className="relative shrink-0 text-2xl font-extrabold text-brand-navy sm:text-[1.65rem] lg:text-[2rem]">
+            Specialities
+            <Plus className="absolute -right-6 top-1 size-[1rem] text-brand-hero-blue sm:-right-8 sm:size-5" strokeWidth={2.4} aria-hidden />
+          </h2>
+          <div className="flex justify-end gap-2 sm:shrink-0">
+            <button
+              type="button"
+              onClick={() => scrollRail(-1)}
+              aria-label="Scroll specialties left"
+              className="flex size-10 items-center justify-center rounded-full border border-brand-stroke-soft bg-white text-brand-navy shadow-sm transition hover:border-brand-hero-blue/35 hover:bg-brand-landing/70"
+            >
+              <ChevronLeft className="size-5" strokeWidth={2} aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollRail(1)}
+              aria-label="Scroll specialties right"
+              className="flex size-10 items-center justify-center rounded-full border border-brand-hero-blue/25 bg-brand-hero-blue text-white shadow-sm transition hover:brightness-105"
+            >
+              <ChevronRight className="size-5" strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+        </div>
+
+        {/* pt reserves room so ring/shadow aren’t clipped; avoid hover:-translate-y (moves cards into heading) */}
+        <div
+          ref={railRef}
+          className="mt-8 flex gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-1 pb-8 pt-5 sm:mt-10 sm:pb-9 sm:pt-6 lg:mt-[2.625rem] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {SPECIALITY_SHOWCASE.map(({ name, Icon, highlight }) => (
+            <Link
+              key={name}
+              to={`${ROUTES.findDoctor}?search=${encodeURIComponent(name)}`}
+              className={cn(
+                'flex w-[41%] min-w-[9.25rem] max-w-[10.25rem] shrink-0 snap-start flex-col items-center gap-3 rounded-2xl bg-white px-3 pb-4 pt-5 text-center shadow-hero-search-kit ring-1 ring-brand-stroke-soft/85 transition-[box-shadow,ring-color] hover:z-10 hover:shadow-float hover:ring-2 hover:ring-brand-hero-blue/35 sm:w-[26%] sm:min-w-[8.85rem]',
+                highlight ? 'ring-2 ring-brand-hero-blue/55' : '',
+              )}
+            >
+              <span
+                className={cn(
+                  'flex size-[3.15rem] items-center justify-center rounded-full shadow-[inset_0_2px_0_rgba(255,255,255,0.75)] ring-1',
+                  highlight ? 'bg-brand-hero-blue text-white ring-brand-hero-blue/50' : 'bg-[#e8f4fc] text-brand-hero-blue ring-brand-hero-blue/15',
+                )}
+              >
+                <Icon className="size-[1.4rem]" strokeWidth={highlight ? 2 : 1.85} aria-hidden />
+              </span>
+              <span className="text-sm font-bold leading-tight text-brand-navy">{name}</span>
+            </Link>
+          ))}
+          <div className="w-6 shrink-0 sm:w-2" aria-hidden />
+        </div>
+
+        <div className="mt-10 flex justify-center">
+          <Button
+            variant="navCyan"
+            size="lg"
+            className="w-full max-w-sm rounded-full border-0 bg-gradient-search-pill px-9 text-[0.9rem] font-bold text-white shadow-sm hover:brightness-[1.04] sm:w-auto sm:min-w-[min(100%,17.5rem)]"
+            asChild
+          >
+            <Link to={ROUTES.specialties}>See All Specialities</Link>
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -280,16 +546,6 @@ function HeroDoctorIllustration() {
 }
 
 export default function LandingPage() {
-  const specialties = useQuery({
-    queryKey: ['specialties', 'public'],
-    queryFn: listPublicSpecialties,
-  });
-
-  const featured = useQuery({
-    queryKey: ['practitioners', 'directory', { page: 1, limit: 6, sort: 'rating' as const }],
-    queryFn: () => listPractitionersDirectory({ page: 1, limit: 6, sort: 'rating' }),
-  });
-
   return (
     <>
       <Helmet>
@@ -362,6 +618,8 @@ export default function LandingPage() {
           </dl>
         </div>
       </section>
+
+      <LandingSpecialtiesSection />
 
       {/* Patients anchor */}
       <section id="patients" className="scroll-mt-28 border-y border-brand-stroke-soft bg-white py-14">
@@ -611,53 +869,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-t border-brand-stroke-soft py-14">
-        <div className="mx-auto w-full max-w-site px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center text-2xl font-bold text-brand-navy sm:text-[1.65rem]">Specialties</h2>
-          <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-brand-body">
-            Explore care areas from our Live catalog.
-          </p>
-          {specialties.isLoading ? <p className="mt-10 text-center text-brand-body">Loading…</p> : null}
-          {specialties.isError ? <p className="mt-10 text-center text-red-600">Could not load specialties.</p> : null}
-          {specialties.data ? (
-            <ul className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {specialties.data.slice(0, 8).map((s: SpecialtyDto) => (
-                <li key={s.id}>
-                  <Link
-                    to={`${ROUTES.findDoctor}?specialtyId=${encodeURIComponent(s.id)}`}
-                    className="block rounded-xl border border-brand-stroke-soft bg-white p-4 text-left text-sm font-semibold text-brand-navy shadow-sm transition hover:border-brand-cyan/50"
-                  >
-                    {s.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <div className="mt-8 text-center">
-            <Link to={ROUTES.specialties} className="font-semibold text-brand-cyan hover:underline">
-              View all specialties
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="pb-16 pt-6">
-        <div className="mx-auto w-full max-w-site px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center text-2xl font-bold text-brand-navy sm:text-[1.65rem]">Featured practitioners</h2>
-          <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-brand-body">Top-rated verified doctors in our directory.</p>
-          {featured.isLoading ? <p className="mt-10 text-center text-brand-body">Loading…</p> : null}
-          {featured.isError ? <p className="mt-10 text-center text-red-600">Could not load directory.</p> : null}
-          {featured.data?.items.length ? (
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {featured.data.items.map((p) => (
-                <PractitionerMiniCard key={String(p._id)} p={p} />
-              ))}
-            </div>
-          ) : featured.isSuccess ? (
-            <p className="mt-10 text-center text-brand-body">No verified practitioners in the catalog yet.</p>
-          ) : null}
-        </div>
-      </section>
+      <LandingFaqSection />
 
       {/* Testimonials */}
       <section className="border-t border-brand-stroke-soft bg-white py-16">
