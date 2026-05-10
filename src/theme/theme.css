@@ -126,4 +126,21 @@
       0 2px 8px -2px rgb(14 22 61 / 0.05),
       0 1px 3px -1px rgb(14 22 61 / 0.035);
   }
+
+  /**
+   * “How it works” — soft clinical backdrop + corner hex mesh (telehealth reference).
+   * Pattern: nested hex strokes, hero blue at low opacity.
+   */
+  .bg-how-it-works-shell {
+    background-color: #f1f7fc;
+    background-image:
+      radial-gradient(ellipse 90% 75% at 8% 20%, rgb(207 238 253 / 0.55), transparent 58%),
+      radial-gradient(ellipse 85% 70% at 96% 88%, rgb(32 131 255 / 0.09), transparent 55%),
+      linear-gradient(180deg, #f5faff 0%, #edf4fb 100%);
+  }
+
+  .how-it-works-hex-tile {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='90' viewBox='0 0 52 90'%3E%3Cg fill='none' stroke='%232083ff' stroke-width='1' opacity='1'%3E%3Cpath d='M26 0 L52 15 L52 45 L26 60 L0 45 L0 15 Z'/%3E%3Cpath d='M26 30 L52 45 L52 75 L26 90 L0 75 L0 45 Z'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 52px 90px;
+  }
 }

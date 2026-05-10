@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Check, Plus, Star } from 'lucide-react';
+import { CalendarCheck, Check, ClipboardList, Pill, Plus, Search, Star } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { HeroSearchBar } from '@/components/marketing/HeroSearchBar';
@@ -7,10 +7,41 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { listPractitionersDirectory, type PractitionerDirectoryItem } from '@/features/practitioners/public-api';
 import { listPublicSpecialties, type SpecialtyDto } from '@/features/specialties/api';
+import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/router/routes';
 
 const DOCTOR_IMG =
   'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=640&q=86';
+/** How it works — verified Unsplash asset (telehealth-friendly clinical portrait) */
+const HOW_IT_WORKS_IMG =
+  'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=900&q=85';
+
+const HOW_IT_WORKS_STEPS = [
+  {
+    title: 'Search a Doctor',
+    description:
+      'Find verified practitioners by specialty, location, or availability and narrow down who fits your needs.',
+    Icon: Search,
+  },
+  {
+    title: 'Check Doctor Profile',
+    description:
+      'Explore detailed profiles, languages, and patient feedback so you can book knowing exactly who you will see.',
+    Icon: ClipboardList,
+  },
+  {
+    title: 'Book & Consult Online',
+    description:
+      'Reserve a slot that works for you, then meet your clinician via secure messaging or video—no crowded waiting rooms.',
+    Icon: CalendarCheck,
+  },
+  {
+    title: 'Pharmacy',
+    description:
+      'When prescribing is appropriate, your clinician routes medications to trusted partner pharmacies you can use for pickup or delivery.',
+    Icon: Pill,
+  },
+] as const;
 const AVATAR_JD = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80';
 const AV_ROUND = [
   'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=96&q=72',
@@ -310,57 +341,105 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-16">
-        <div className="mx-auto w-full max-w-site px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-brand-navy lg:text-[2rem]">How It Works</h2>
-            <p className="mx-auto mt-3 max-w-xl text-lg text-brand-body">Get expert care in three simple steps.</p>
-          </div>
-          <div className="relative mt-12 grid gap-8 sm:gap-10 lg:grid-cols-3">
-            <div
-              className="absolute left-[16.7%] right-[16.7%] top-[2.2rem] hidden h-px bg-brand-stroke-strong/40 lg:block"
-              aria-hidden
-            />
-            {[
-              {
-                step: '01',
-                title: 'Search a Doctor',
-                description:
-                  'Browse verified practitioners by specialty, location, or name and read their full profiles.',
-              },
-              {
-                step: '02',
-                title: 'Book an Appointment',
-                description:
-                  'Pick a time that works for you and confirm your slot instantly — no waiting on hold.',
-              },
-              {
-                step: '03',
-                title: 'Consult Online',
-                description:
-                  'Connect with your doctor via secure messaging or video for a thorough, private consultation.',
-              },
-            ].map(({ step, title, description }) => (
-              <div key={step} className="relative flex flex-col items-center text-center">
-                <div className="relative z-10 flex size-[4.5rem] shrink-0 items-center justify-center rounded-full bg-gradient-brand-primary text-lg font-extrabold text-white shadow-float">
-                  {step}
-                </div>
-                <h3 className="mt-5 text-lg font-bold text-brand-navy">{title}</h3>
-                <p className="mt-2 max-w-xs text-sm leading-relaxed text-brand-body">{description}</p>
+      {/* How it works — split layout + four steps (includes pharmacy) */}
+      <section
+        id="how-it-works"
+        className="relative isolate scroll-mt-28 overflow-hidden border-y border-brand-stroke-soft bg-how-it-works-shell py-12 lg:py-20"
+      >
+        <span
+          className="how-it-works-hex-tile pointer-events-none absolute -left-[8%] top-[-6%] h-[min(380px,48vh)] w-[min(100%,460px)] opacity-[0.22] mask-[linear-gradient(to_bottom_right,black_42%,transparent_88%)] sm:-left-[4%] sm:opacity-[0.26]"
+          aria-hidden
+        />
+        <span
+          className="how-it-works-hex-tile pointer-events-none absolute -bottom-[10%] -right-[6%] h-[min(360px,45vh)] w-[min(100%,440px)] opacity-[0.2] mask-[linear-gradient(to_top_left,black_46%,transparent_90%)] sm:opacity-[0.24]"
+          aria-hidden
+        />
+        <div className="relative mx-auto w-full max-w-site px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.1fr)] lg:items-stretch lg:gap-x-11 xl:gap-x-16">
+            <figure className="relative order-2 mx-auto flex w-full max-w-md flex-col lg:order-1 lg:mx-0 lg:h-full lg:max-w-none lg:min-h-0">
+              <span
+                className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[min(115%,460px)] w-[min(108%,430px)] -translate-x-1/2 -translate-y-[48%] rounded-full bg-brand-sky/35 blur-[2px]"
+                aria-hidden
+              />
+              <span
+                className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[min(126%,520px)] w-[min(120%,480px)] -translate-x-1/2 -translate-y-[48%] rounded-full bg-brand-landing/95 ring-1 ring-brand-hero-blue/[0.06]"
+                aria-hidden
+              />
+              <span
+                className="pointer-events-none absolute -left-[6%] top-[8%] h-44 w-44 rounded-full bg-brand-cyan/15 blur-3xl sm:h-52 sm:w-52"
+                aria-hidden
+              />
+              <span
+                className="pointer-events-none absolute -bottom-2 -right-[4%] h-36 w-36 rounded-full bg-brand-hero-blue/10 blur-[2.75rem]"
+                aria-hidden
+              />
+              <div
+                className={cn(
+                  'relative isolate mx-auto w-full max-w-md overflow-hidden rounded-2xl bg-white ring-1 ring-brand-stroke-soft/90 shadow-hero-search-kit lg:mx-0 lg:max-w-none lg:min-h-0 lg:flex-1 lg:rounded-[1.25rem]',
+                  'aspect-[16/11] max-h-[300px] max-lg:w-full lg:aspect-auto lg:max-h-none lg:self-stretch sm:max-h-[320px]',
+                )}
+              >
+                <img
+                  src={HOW_IT_WORKS_IMG}
+                  alt="Clinician in telehealth-friendly care setting."
+                  width={900}
+                  height={600}
+                  sizes="(min-width: 1024px) 38vw, (min-width: 640px) 90vw, 100vw"
+                  className="h-full w-full min-h-[12rem] object-cover object-[center_22%] lg:absolute lg:inset-0 lg:min-h-0"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </figure>
 
-      <section id="pharmacy" className="scroll-mt-28 py-14">
-        <div className="mx-auto w-full max-w-site px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-brand-navy lg:text-[2rem]">Pharmacy</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-brand-body">
-            Prescription fulfillment partners and delivery options coming soon — your doctor will guide eligible medications after
-            your consult.
-          </p>
+            <div className="order-1 flex min-h-0 flex-col lg:order-2 lg:h-full">
+              <div className="shrink-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-cyan sm:text-sm">
+                  How it works
+                </p>
+                <h2 className="mt-2 text-balance text-[1.75rem] font-extrabold leading-[1.12] text-brand-navy sm:text-[2rem] lg:mt-2.5 lg:text-[2.25rem]">
+                  <span className="font-black text-brand-hero-blue tabular-nums">4</span> easy steps to get your{' '}
+                  <span className="relative inline-block">
+                    solution
+                    <span className="absolute -right-7 top-[-2px] flex sm:-right-9" aria-hidden>
+                      <Plus className="size-[1rem] text-brand-hero-blue drop-shadow-[0_1px_0_rgba(255,255,255,0.85)] sm:size-[1.2rem]" strokeWidth={3} />
+                      <Plus className="-ml-2 size-[1rem] text-brand-cyan sm:-ml-2.5 sm:size-[1.2rem]" strokeWidth={3} />
+                    </span>
+                  </span>
+                </h2>
+                <p className="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-brand-body sm:mt-3.5 sm:text-base lg:mt-4 lg:text-lg lg:leading-relaxed">
+                  From search to prescriptions, every stage stays on-platform so you waste less time and get clearer next
+                  steps.
+                </p>
+              </div>
+
+              <ul className="mt-8 grid min-h-0 flex-1 gap-6 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-7 lg:mt-10 lg:auto-rows-fr lg:gap-x-12 lg:gap-y-10 lg:self-stretch lg:content-between">
+                {HOW_IT_WORKS_STEPS.map(({ title, description, Icon }, idx) => {
+                  const isPharmacy = title === 'Pharmacy';
+                  return (
+                    <li
+                      key={title}
+                      id={isPharmacy ? 'pharmacy' : undefined}
+                      className={cn('flex gap-4', isPharmacy && 'scroll-mt-28')}
+                    >
+                      <div className="flex size-[3.25rem] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#dff3ff] via-[#cfe8fd] to-[#bfe0fc] shadow-[inset_0_1px_0_rgba(255,255,255,0.92),inset_0_-1px_0_rgba(14,22,61,0.04)] ring-1 ring-brand-hero-blue/35">
+                        <Icon className="size-[1.45rem] text-[#1557a8]" strokeWidth={2.05} aria-hidden />
+                      </div>
+                      <div className="min-w-0 flex-1 lg:pb-1">
+                        <p className="text-sm font-black tabular-nums tracking-wide text-brand-navy sm:text-[0.95rem]">
+                          {String(idx + 1).padStart(2, '0')}
+                        </p>
+                        <h3 className="text-base font-bold leading-snug text-brand-navy">{title}</h3>
+                        <p className="mt-1.5 text-[0.875rem] leading-relaxed text-brand-body sm:text-[0.9rem] sm:leading-relaxed lg:text-[0.9375rem] lg:leading-[1.55]">
+                          {description}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
