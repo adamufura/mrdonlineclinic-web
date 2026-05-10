@@ -1,4 +1,5 @@
 import { api } from '@/lib/api/client';
+import { unwrapData } from '@/lib/api/unpack';
 import type { ApiEnvelope } from '@/types/api';
 
 export type SpecialtyDto = {
@@ -10,10 +11,8 @@ export type SpecialtyDto = {
   isActive: boolean;
 };
 
+/** GET /api/v1/specialties — public, no auth. */
 export async function listPublicSpecialties(): Promise<SpecialtyDto[]> {
   const { data } = await api.get<ApiEnvelope<SpecialtyDto[]>>('/specialties');
-  if (!data.success || !data.data) {
-    throw new Error(data.message || 'Failed to load specialties');
-  }
-  return data.data;
+  return unwrapData(data, 'Failed to load specialties');
 }

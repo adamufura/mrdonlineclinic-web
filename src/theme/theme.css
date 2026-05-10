@@ -1,0 +1,129 @@
+/**
+ * MRD Online Clinic marketing palette — cyan / navy / body gray / hero blue.
+ */
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Landing / marketing */
+  --color-brand-cyan: #09d1e7;
+  --color-brand-navy: #0e163d;
+  --color-brand-body: #757575;
+  --color-brand-hero-blue: #2083ff;
+  --color-marketing-bg: #fafbfd;
+
+  /* Legacy kit aliases (dashboards / shared chrome) */
+  --color-brand-teal: #09d1e7;
+  --color-brand-royal: #0e163d;
+  --color-brand-royal-deep: #0a0f28;
+  --color-brand-landing: #eff6fc;
+  --color-brand-bg2: #2083ff;
+  --color-brand-sky: #67c8f0;
+  --color-brand-vet-lime: #c4e538;
+  --color-brand-stroke-soft: #e8eef7;
+  --color-brand-stroke-strong: #c5d5eb;
+
+  /* App shell semantics */
+  --color-background: var(--color-brand-landing);
+  --color-foreground: var(--color-brand-navy);
+  --color-card: #ffffff;
+  --color-card-foreground: var(--color-brand-navy);
+  --color-primary: var(--color-brand-cyan);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #eef4fb;
+  --color-secondary-foreground: var(--color-brand-navy);
+  --color-muted: #eef2f8;
+  --color-muted-foreground: var(--color-brand-body);
+  --color-border: #e4eaf4;
+  --color-input: #e4eaf4;
+  --color-ring: var(--color-brand-cyan);
+  --color-accent: var(--color-brand-hero-blue);
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.9375rem;
+  --radius-2xl: 1rem;
+  --radius-marketing-xl: 0.9375rem;
+  --radius-marketing-2xl: 1rem;
+
+  --shadow-search: 0 20px 52px rgba(14, 22, 61, 0.094);
+  --shadow-float: 0 14px 40px rgba(14, 22, 61, 0.12);
+
+  --shadow-brand: 0 10px 40px -12px rgba(14, 22, 61, 0.18);
+}
+
+@layer utilities {
+  /* Marketing shell width (~1380px cap + gutter): navbar, hero, landing sections */
+  .max-w-site {
+    max-width: min(86.25rem, calc(100vw - 2rem));
+  }
+
+  /* Subtle grid + faint diagonal motif (closer to reference telemedicine kit) */
+  .bg-brand-marketing {
+    background-color: var(--color-marketing-bg);
+    background-image:
+      repeating-linear-gradient(
+        -12deg,
+        transparent,
+        transparent 47px,
+        rgba(14, 22, 61, 0.028) 47px,
+        rgba(14, 22, 61, 0.028) 48px
+      ),
+      linear-gradient(rgba(14, 22, 61, 0.034) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(14, 22, 61, 0.034) 1px, transparent 1px);
+    background-size:
+      auto,
+      40px 40px,
+      40px 40px;
+    background-position: 0 0, 0 0, 0 0;
+  }
+
+  .bg-gradient-brand-primary {
+    background-image: linear-gradient(135deg, var(--color-brand-cyan) 0%, var(--color-brand-hero-blue) 100%);
+  }
+
+  /** Hero search “Search” chip — blue → cyan left-to-right (telemedicine kit reference) */
+  .bg-gradient-search-pill {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-brand-hero-blue) 0%,
+      var(--color-brand-cyan) 100%
+    );
+  }
+
+  .bg-gradient-brand-vet {
+    background-image: linear-gradient(135deg, var(--color-brand-cyan) 0%, var(--color-brand-vet-lime) 100%);
+  }
+
+  .text-gradient-brand {
+    color: var(--color-brand-cyan);
+  }
+
+  .border-gradient-brand-stroke {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--color-card), var(--color-card)) padding-box,
+      linear-gradient(135deg, var(--color-brand-stroke-soft), var(--color-brand-stroke-strong)) border-box;
+  }
+
+  .shadow-brand {
+    box-shadow: var(--shadow-brand);
+  }
+
+  .shadow-float {
+    box-shadow: var(--shadow-float);
+  }
+
+  .shadow-search {
+    box-shadow: var(--shadow-search);
+  }
+
+  /** Hero search — compact kit bar: light lift, no heavy float */
+  .shadow-hero-search-kit {
+    box-shadow:
+      0 8px 28px -4px rgb(14 22 61 / 0.07),
+      0 2px 8px -2px rgb(14 22 61 / 0.04);
+  }
+}

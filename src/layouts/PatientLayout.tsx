@@ -12,6 +12,7 @@ const nav = [
   { to: ROUTES.patient.prescriptions, label: 'Prescriptions' },
   { to: ROUTES.findDoctor, label: 'Find a doctor' },
   { to: ROUTES.patient.profile, label: 'Profile' },
+  { to: ROUTES.patient.profileMedical, label: 'Medical info' },
 ];
 
 export function PatientLayout() {
