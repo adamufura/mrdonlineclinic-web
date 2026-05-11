@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { logout } from '@/features/auth/api';
@@ -174,39 +175,42 @@ function SidebarChrome({
   displayName,
   subtitle,
   initial,
-  onLogout,
+  onRequestLogout,
 }: {
   displayName: string;
   subtitle: string;
   initial: string;
-  onLogout: () => void;
+  onRequestLogout: () => void;
 }) {
   return (
-    <div className="mt-auto flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-300 to-sky-400 font-display text-[13px] font-medium text-[#04132a]">
-        {initial}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium text-white">{displayName}</p>
-        <p className="truncate text-[11px] text-white/55">{subtitle}</p>
-      </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <button
-          type="button"
-          className="rounded-md p-1 text-white/50 transition-colors hover:bg-white/5 hover:text-white"
-          title="More"
-        >
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-[11px] text-white/70 hover:bg-white/10 hover:text-white"
-          type="button"
-          onClick={() => void onLogout()}
-        >
-          Log out
-        </Button>
+    <div className="mt-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
+      <div className="flex gap-2.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-300 to-sky-400 font-display text-[13px] font-medium text-[#04132a]">
+          {initial}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-medium text-white">{displayName}</p>
+              <p className="truncate text-[11px] text-white/55">{subtitle}</p>
+            </div>
+            <button
+              type="button"
+              className="shrink-0 rounded-md p-1 text-white/50 transition-colors hover:bg-white/5 hover:text-white"
+              title="More"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </div>
+          <Button
+            variant="ghost"
+            type="button"
+            className="mt-2 h-8 w-full justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[12px] font-medium text-white/85 hover:bg-white/10 hover:text-white"
+            onClick={onRequestLogout}
+          >
+            Log out
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -219,6 +223,7 @@ export function PractitionerLayout() {
   const user = useAuthStore((s) => s.user);
   const clearSession = useAuthStore((s) => s.clearSession);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const profile = useQuery({
@@ -249,7 +254,7 @@ export function PractitionerLayout() {
     : 'Practitioner';
   const initial = (user?.firstName?.[0] ?? user?.email?.[0] ?? 'P').toUpperCase();
 
-  async function onLogout() {
+  async function performLogout() {
     await logout();
     clearSession();
     window.location.assign(ROUTES.login);
@@ -278,7 +283,7 @@ export function PractitionerLayout() {
   const pendingAppointments = pendingCount.data ?? 0;
 
   return (
-    <div className="min-h-dvh bg-[#f7f8fb] text-foreground">
+    <div className="relative h-dvh overflow-hidden bg-[#f7f8fb] text-foreground">
       <aside className={cn(sidebarShell, 'fixed left-0 top-0 z-40 hidden lg:flex')}>
         <div className="relative z-[1] flex min-h-0 flex-1 flex-col gap-2">
           <SidebarNav pendingAppointments={pendingAppointments} />
@@ -286,7 +291,7 @@ export function PractitionerLayout() {
             displayName={displayName}
             subtitle={specialtyLabel}
             initial={initial}
-            onLogout={onLogout}
+            onRequestLogout={() => setConfirmLogoutOpen(true)}
           />
         </div>
       </aside>
@@ -318,14 +323,14 @@ export function PractitionerLayout() {
                 displayName={displayName}
                 subtitle={specialtyLabel}
                 initial={initial}
-                onLogout={onLogout}
+                onRequestLogout={() => setConfirmLogoutOpen(true)}
               />
             </div>
           </aside>
         </div>
       ) : null}
 
-      <div className="flex min-h-dvh flex-col lg:pl-[260px]">
+      <div className="flex h-dvh min-h-0 flex-col overflow-hidden lg:pl-[260px]">
         <header className="fixed left-0 right-0 top-0 z-30 flex h-[60px] items-center gap-4 border-b border-[#e2e8f0] bg-white/85 px-4 backdrop-blur-xl lg:left-[260px] lg:px-8">
           <Button
             variant="ghost"
@@ -386,7 +391,7 @@ export function PractitionerLayout() {
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-[60px]">
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain pt-[60px] [-webkit-overflow-scrolling:touch]">
           <div className="mx-auto max-w-[1600px] px-4 py-6 lg:px-8 lg:py-7">
             {showBanner ? (
               <div
@@ -444,6 +449,17 @@ export function PractitionerLayout() {
           </div>
         </main>
       </div>
+
+      <ConfirmDialog
+        open={confirmLogoutOpen}
+        onOpenChange={setConfirmLogoutOpen}
+        title="Log out of MRD Clinic?"
+        description="You will be signed out on this device. You can sign back in anytime."
+        confirmLabel="Log out"
+        cancelLabel="Stay signed in"
+        variant="destructive"
+        onConfirm={performLogout}
+      />
     </div>
   );
 }
