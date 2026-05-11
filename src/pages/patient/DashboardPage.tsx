@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { format, formatDistanceToNowStrict, isFuture, isSameMonth } from 'date-fns';
+import { endOfMonth, format, formatDistanceToNowStrict, isFuture, startOfMonth } from 'date-fns';
 import {
   Activity,
   ArrowRight,
@@ -19,6 +19,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { listNotifications } from '@/features/notifications/api';
 import { listPatientAppointments, listPatientPrescriptions } from '@/features/patients/api';
 import { ROUTES } from '@/router/routes';
 import { useAuthStore } from '@/stores/auth-store';
@@ -77,10 +78,49 @@ function statusPillClass(status: string): { label: string; className: string } {
 
 export default function PatientDashboardPage() {
   const authUser = useAuthStore((s) => s.user);
+  const monthAnchor = new Date();
 
-  const appointments = useQuery({
-    queryKey: ['patients', 'appointments', { page: 1, limit: 40 }],
-    queryFn: () => listPatientAppointments({ page: 1, limit: 40 }),
+  const futureAppointments = useQuery({
+    queryKey: ['patients', 'appointments', 'dashboard', 'from-now', 40],
+    queryFn: () => listPatientAppointments({ page: 1, limit: 40, from: new Date() }),
+  });
+
+  const inProgressAppointments = useQuery({
+    queryKey: ['patients', 'appointments', 'dashboard', 'in-progress'],
+    queryFn: () => listPatientAppointments({ page: 1, limit: 10, status: 'IN_PROGRESS' }),
+  });
+
+  const apptsOnFile = useQuery({
+    queryKey: ['patients', 'appointments', 'dashboard', 'count-all'],
+    queryFn: () => listPatientAppointments({ page: 1, limit: 1 }),
+  });
+
+  const completedTotalQ = useQuery({
+    queryKey: ['patients', 'appointments', 'dashboard', 'count-completed'],
+    queryFn: () => listPatientAppointments({ page: 1, limit: 1, status: 'COMPLETED' }),
+  });
+
+  const completedThisMonthQ = useQuery({
+    queryKey: [
+      'patients',
+      'appointments',
+      'dashboard',
+      'count-completed-month',
+      format(startOfMonth(monthAnchor), 'yyyy-MM'),
+    ],
+    queryFn: () =>
+      listPatientAppointments({
+        page: 1,
+        limit: 1,
+        status: 'COMPLETED',
+        from: startOfMonth(monthAnchor),
+        to: endOfMonth(monthAnchor),
+      }),
+  });
+
+  const unreadNotifications = useQuery({
+    queryKey: ['notifications', 'unread-total'],
+    queryFn: () => listNotifications({ page: 1, limit: 1, unreadOnly: true }),
   });
 
   const prescriptions = useQuery({
@@ -88,20 +128,46 @@ export default function PatientDashboardPage() {
     queryFn: () => listPatientPrescriptions({ page: 1, limit: 6 }),
   });
 
-  const items = appointments.data?.items ?? [];
-  const now = new Date();
-  const upcoming = items
-    .filter((a) => {
-      if (!isRecord(a) || !a.scheduledStart) return false;
-      const st = new Date(String(a.scheduledStart));
+  const upcoming = useMemo(() => {
+    const now = new Date();
+    const fut = futureAppointments.data?.items ?? [];
+    const prog = inProgressAppointments.data?.items ?? [];
+    const seen = new Set<string>();
+    const pool: Record<string, unknown>[] = [];
+    for (const raw of prog) {
+      if (!isRecord(raw) || raw._id == null) continue;
+      const id = String(raw._id);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      pool.push(raw);
+    }
+    for (const raw of fut) {
+      if (!isRecord(raw) || raw._id == null) continue;
+      const id = String(raw._id);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      pool.push(raw);
+    }
+
+    const active = pool.filter((a) => {
       const status = String(a.status ?? '');
-      return st >= now && (status === 'PENDING' || status === 'CONFIRMED');
-    })
-    .sort((a, b) => {
-      const ta = new Date(String((a as Record<string, unknown>).scheduledStart)).getTime();
-      const tb = new Date(String((b as Record<string, unknown>).scheduledStart)).getTime();
+      if (status === 'CANCELLED' || status === 'REJECTED' || status === 'NO_SHOW' || status === 'COMPLETED') {
+        return false;
+      }
+      if (status === 'IN_PROGRESS') return true;
+      if (status === 'PENDING' || status === 'CONFIRMED') {
+        if (!a.scheduledStart) return false;
+        return new Date(String(a.scheduledStart)) >= now;
+      }
+      return false;
+    });
+
+    return active.sort((a, b) => {
+      const ta = a.scheduledStart ? new Date(String(a.scheduledStart)).getTime() : 0;
+      const tb = b.scheduledStart ? new Date(String(b.scheduledStart)).getTime() : 0;
       return ta - tb;
     });
+  }, [futureAppointments.data, inProgressAppointments.data]);
 
   const next = upcoming[0] as Record<string, unknown> | undefined;
   const nextStart = next?.scheduledStart ? new Date(String(next.scheduledStart)) : undefined;
@@ -123,22 +189,19 @@ export default function PatientDashboardPage() {
   const pr = next && isRecord(next.practitioner) ? (next.practitioner as Record<string, unknown>) : null;
   const prName = pr ? `${String(pr.firstName ?? '')} ${String(pr.lastName ?? '')}`.trim() : '';
 
-  const completedCount = useMemo(
-    () => items.filter((a) => isRecord(a) && String(a.status) === 'COMPLETED').length,
-    [items],
-  );
-
-  const completedThisMonth = useMemo(() => {
-    const today = new Date();
-    return items.filter((a) => {
-      if (!isRecord(a) || String(a.status) !== 'COMPLETED' || !a.scheduledStart) return false;
-      return isSameMonth(new Date(String(a.scheduledStart)), today);
-    }).length;
-  }, [items]);
+  const completedTotal = completedTotalQ.data?.meta.total ?? 0;
+  const completedThisMonth = completedThisMonthQ.data?.meta.total ?? 0;
+  const unreadTotal = unreadNotifications.data?.meta.total ?? 0;
 
   const upcomingCount = upcoming.length;
   const rxTotal = prescriptions.data?.meta.total ?? 0;
-  const apptTotal = appointments.data?.meta.total ?? 0;
+  const apptTotal = apptsOnFile.data?.meta.total ?? 0;
+
+  const dashApptLoading = futureAppointments.isPending || inProgressAppointments.isPending;
+  const dashApptError = futureAppointments.isError || inProgressAppointments.isError;
+  const dashApptReady = !dashApptLoading && !dashApptError;
+
+  const now = new Date();
 
   const visitTitle =
     next && typeof next.reasonForVisit === 'string' && next.reasonForVisit.trim()
@@ -204,11 +267,11 @@ export default function PatientDashboardPage() {
           <StatCard
             className="mint"
             label="Visits completed"
-            value={completedCount}
+            value={completedTotalQ.isPending ? '…' : completedTotal}
             meta={
               completedThisMonth > 0
                 ? `+${completedThisMonth} this month`
-                : completedCount > 0
+                : completedTotal > 0
                   ? 'Across your history'
                   : 'After your first visit'
             }
@@ -222,19 +285,29 @@ export default function PatientDashboardPage() {
           <StatCard
             className="warm"
             label="Unread messages"
-            value="—"
+            value={unreadNotifications.isPending ? '…' : unreadNotifications.isError ? '—' : unreadTotal}
             meta={
-              <Link to={ROUTES.patient.messages} className="font-medium text-sky-800 hover:underline">
-                Open inbox
-              </Link>
+              <span className="inline-flex flex-wrap items-center gap-x-1">
+                <span>
+                  {unreadNotifications.isError
+                    ? 'Could not load count'
+                    : unreadTotal > 0
+                      ? 'Notifications & updates'
+                      : 'Nothing new'}
+                </span>
+                <span className="text-[#94a3b8]">·</span>
+                <Link to={ROUTES.patient.messages} className="font-medium text-sky-800 hover:underline">
+                  Open inbox
+                </Link>
+              </span>
             }
           />
         </div>
 
-        {appointments.isLoading ? (
+        {dashApptLoading ? (
           <p className="text-sm text-muted-foreground">Loading your dashboard…</p>
         ) : null}
-        {appointments.isError ? (
+        {dashApptError ? (
           <p className="text-sm text-destructive">Could not load appointments. Try again shortly.</p>
         ) : null}
 
@@ -323,7 +396,7 @@ export default function PatientDashboardPage() {
               ) : null}
             </div>
           </section>
-        ) : appointments.isSuccess ? (
+        ) : dashApptReady ? (
           <section className="rounded-2xl border border-border bg-white p-8 text-center shadow-sm">
             <p className="font-display text-lg text-[#0a1628]">No upcoming visits</p>
             <p className="mt-2 text-sm text-muted-foreground">When you book, your next visit will appear here.</p>

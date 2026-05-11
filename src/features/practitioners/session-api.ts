@@ -22,6 +22,12 @@ export type PractitionerAppointmentsQuery = {
   to?: Date;
 };
 
+/** GET /api/v1/practitioners/me/patients — distinct patients from shared appointments (deduped). */
+export async function listPractitionerPatients(): Promise<Record<string, unknown>[]> {
+  const { data } = await api.get<ApiEnvelope<Record<string, unknown>[]>>('/practitioners/me/patients');
+  return unwrapData(data, 'Failed to load patients');
+}
+
 /** GET /api/v1/practitioners/me/appointments */
 export async function listPractitionerAppointments(
   query: PractitionerAppointmentsQuery,
