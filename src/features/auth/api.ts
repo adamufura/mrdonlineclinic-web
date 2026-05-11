@@ -33,7 +33,6 @@ export async function logout(): Promise<void> {
 
 export type RegisterPatientBody = {
   firstName: string;
-  middleName?: string;
   lastName: string;
   email: string;
   phoneNumber: string;
@@ -65,4 +64,12 @@ export async function forgotPassword(email: string): Promise<{ message: string }
 export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
   const { data } = await api.post<ApiEnvelope<{ message: string }>>('/auth/reset-password', { token, password });
   return unwrap(data, 'Reset failed');
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+  const { data } = await api.post<ApiEnvelope<{ message: string }>>('/auth/change-password', {
+    currentPassword,
+    newPassword,
+  });
+  return unwrap(data, 'Password change failed');
 }

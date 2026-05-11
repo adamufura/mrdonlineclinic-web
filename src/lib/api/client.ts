@@ -1,6 +1,6 @@
 import axios, { type AxiosError } from 'axios';
 import '@/lib/api/axios-extensions';
-import { getEnv } from '@/config/env';
+import { getApiBaseUrl } from '@/config/env';
 import { useAuthStore } from '@/stores/auth-store';
 import type { ApiEnvelope } from '@/types/api';
 
@@ -10,7 +10,7 @@ async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const bare = axios.create({
-        baseURL: getEnv().VITE_API_BASE_URL,
+        baseURL: getApiBaseUrl(),
         withCredentials: true,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -32,7 +32,7 @@ async function refreshAccessToken(): Promise<string> {
 }
 
 export const api = axios.create({
-  baseURL: getEnv().VITE_API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
