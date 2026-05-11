@@ -163,6 +163,10 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import('@/pages/patient/MessagesPage')).default }),
           },
           {
+            path: 'messages/:roomId',
+            lazy: async () => ({ Component: (await import('@/pages/patient/MessagesPage')).default }),
+          },
+          {
             path: 'prescriptions',
             lazy: async () => ({ Component: (await import('@/pages/patient/PrescriptionsPage')).default }),
           },
@@ -215,6 +219,10 @@ export const router = createBrowserRouter([
           },
           {
             path: 'messages',
+            lazy: async () => ({ Component: (await import('@/pages/practitioner/MessagesPage')).default }),
+          },
+          {
+            path: 'messages/:roomId',
             lazy: async () => ({ Component: (await import('@/pages/practitioner/MessagesPage')).default }),
           },
           {

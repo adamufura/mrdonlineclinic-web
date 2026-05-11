@@ -284,7 +284,7 @@ export default function PractitionerAppointmentDetailPage() {
               </div>
               {chatRoomId ? (
                 <Button variant="outline" size="sm" className="gap-2 rounded-lg border-[#e2e8f0]" asChild>
-                  <Link to={ROUTES.practitioner.messages}>
+                  <Link to={ROUTES.practitioner.messagesRoom(chatRoomId)}>
                     <MessageSquare className="size-4 text-teal-700" />
                     Messages
                   </Link>
