@@ -1,0 +1,176 @@
+      <svg viewBox="0 0 560 460" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="p2-phone" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1a2942"/>
+            <stop offset="1" stop-color="#0a1628"/>
+          </linearGradient>
+          <linearGradient id="p2-screen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fafbfc"/>
+            <stop offset="1" stop-color="#e0f2fe"/>
+          </linearGradient>
+          <linearGradient id="p2-accent" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#5eead4"/>
+            <stop offset="1" stop-color="#0ea5e9"/>
+          </linearGradient>
+          <linearGradient id="p2-accent2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#38bdf8"/>
+            <stop offset="1" stop-color="#0369a1"/>
+          </linearGradient>
+          <linearGradient id="p2-skin" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#d4a574"/>
+            <stop offset="1" stop-color="#a87544"/>
+          </linearGradient>
+          <linearGradient id="p2-chart" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#0ea5e9" stop-opacity="0.5"/>
+            <stop offset="1" stop-color="#0ea5e9" stop-opacity="0"/>
+          </linearGradient>
+          <radialGradient id="p2-glow" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#5eead4" stop-opacity="0.4"/>
+            <stop offset="1" stop-color="#5eead4" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="p2-shadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+            <feOffset dx="0" dy="14"/>
+            <feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer>
+            <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <circle cx="280" cy="230" r="240" fill="url(#p2-glow)"/>
+
+        <path d="M 50 380 Q 200 280 280 230 Q 360 180 510 80" fill="none" stroke="rgba(94,234,212,0.25)" stroke-width="1.5" stroke-dasharray="3 6"/>
+        <circle cx="50" cy="380" r="4" fill="#5eead4"/>
+        <circle cx="510" cy="80" r="4" fill="#38bdf8"/>
+
+        <!-- Patient character -->
+        <g transform="translate(70, 140)" filter="url(#p2-shadow)">
+          <path d="M-45 220 Q-45 130 -10 110 L40 110 Q75 130 75 220 L75 240 L-45 240 Z" fill="#7c3aed" opacity="0.85"/>
+          <path d="M-8 115 L15 130 L38 115 L34 105 L-4 105 Z" fill="#5b21b6"/>
+          <rect x="5" y="90" width="20" height="22" fill="url(#p2-skin)"/>
+          <ellipse cx="15" cy="70" rx="30" ry="34" fill="url(#p2-skin)"/>
+          <path d="M-15 60 Q-18 25 15 22 Q48 25 45 60 Q42 40 30 30 Q15 24 0 30 Q-12 40 -15 60 Z" fill="#3a1f0d"/>
+          <circle cx="-8" cy="50" r="4" fill="#3a1f0d"/>
+          <circle cx="38" cy="50" r="4" fill="#3a1f0d"/>
+          <circle cx="-2" cy="38" r="3" fill="#3a1f0d"/>
+          <circle cx="32" cy="38" r="3" fill="#3a1f0d"/>
+          <ellipse cx="-12" cy="72" rx="3" ry="5" fill="url(#p2-skin)"/>
+          <ellipse cx="5" cy="70" rx="3" ry="2.5" fill="white"/>
+          <circle cx="6" cy="70" r="1.5" fill="#0a1628"/>
+          <ellipse cx="25" cy="70" rx="3" ry="2.5" fill="white"/>
+          <circle cx="24" cy="70" r="1.5" fill="#0a1628"/>
+          <path d="M1 64 Q5 62 9 64" stroke="#3a1f0d" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M21 64 Q25 62 29 64" stroke="#3a1f0d" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M14 75 Q13 82 16 84" stroke="#a87544" stroke-width="1" fill="none" stroke-linecap="round"/>
+          <path d="M9 90 Q15 94 21 90" stroke="#7a4a26" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M50 155 Q70 165 85 195 L100 235 L70 250 L55 215 Q45 195 35 175 Z" fill="#7c3aed" opacity="0.85"/>
+          <ellipse cx="92" cy="232" rx="14" ry="11" fill="url(#p2-skin)" transform="rotate(15 92 232)"/>
+        </g>
+
+        <!-- Phone -->
+        <g transform="translate(190, 60)" filter="url(#p2-shadow)">
+          <rect x="0" y="0" width="200" height="380" rx="32" fill="url(#p2-phone)"/>
+          <rect x="6" y="6" width="188" height="368" rx="26" fill="url(#p2-screen)"/>
+          <rect x="76" y="14" width="48" height="14" rx="7" fill="#0a1628"/>
+          <circle cx="116" cy="21" r="2" fill="#1e3a5f"/>
+          <text x="20" y="42" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#0a1628">9:41</text>
+          <rect x="160" y="36" width="20" height="8" rx="2" fill="none" stroke="#0a1628" stroke-width="0.8"/>
+          <rect x="162" y="38" width="14" height="4" rx="1" fill="#0a1628"/>
+          
+          <text x="20" y="68" font-family="Geist, sans-serif" font-size="9" fill="#64748b">Good morning,</text>
+          <text x="20" y="84" font-family="Fraunces, serif" font-size="16" font-weight="500" fill="#0a1628">Adaeze 👋</text>
+          
+          <circle cx="170" cy="76" r="14" fill="url(#p2-accent)"/>
+          <circle cx="170" cy="73" r="4" fill="white" opacity="0.9"/>
+          <path d="M161 86 Q170 79 179 86" fill="white" opacity="0.9"/>
+          <circle cx="178" cy="68" r="3" fill="#5eead4" stroke="white" stroke-width="1.5"/>
+          
+          <rect x="14" y="100" width="172" height="92" rx="16" fill="url(#p2-accent2)"/>
+          <text x="24" y="118" font-family="Geist, sans-serif" font-size="7" font-weight="500" fill="rgba(255,255,255,0.7)" letter-spacing="1">NEXT APPOINTMENT</text>
+          <text x="24" y="138" font-family="Fraunces, serif" font-size="14" font-weight="500" fill="white">Dr. M. Adeyemi</text>
+          <text x="24" y="152" font-family="Geist, sans-serif" font-size="8" fill="rgba(255,255,255,0.75)">General Practitioner</text>
+          <rect x="24" y="162" width="60" height="20" rx="10" fill="rgba(255,255,255,0.2)"/>
+          <circle cx="34" cy="172" r="5" fill="none" stroke="white" stroke-width="1.2"/>
+          <path d="M34 169 L34 172 L36 174" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <text x="44" y="175" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="white">10:30 AM</text>
+          <rect x="120" y="158" width="56" height="28" rx="14" fill="white"/>
+          <text x="148" y="176" text-anchor="middle" font-family="Geist, sans-serif" font-size="9" font-weight="600" fill="#0369a1">Join now</text>
+          
+          <text x="20" y="216" font-family="Geist, sans-serif" font-size="9" font-weight="600" fill="#0a1628">Quick actions</text>
+          
+          <g transform="translate(14, 224)">
+            <rect width="56" height="56" rx="14" fill="white" stroke="#e2e8f0"/>
+            <circle cx="28" cy="22" r="9" fill="rgba(94,234,212,0.2)"/>
+            <path d="M22 22 L34 22 M28 16 L28 28" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round"/>
+            <text x="28" y="47" text-anchor="middle" font-family="Geist, sans-serif" font-size="6" font-weight="500" fill="#0a1628">Book</text>
+          </g>
+          <g transform="translate(72, 224)">
+            <rect width="56" height="56" rx="14" fill="white" stroke="#e2e8f0"/>
+            <path d="M18 18 L38 18 Q40 18 40 20 L40 30 Q40 32 38 32 L24 32 L18 36 Z" fill="rgba(56,189,248,0.2)"/>
+            <text x="28" y="47" text-anchor="middle" font-family="Geist, sans-serif" font-size="6" font-weight="500" fill="#0a1628">Chat</text>
+          </g>
+          <g transform="translate(130, 224)">
+            <rect width="56" height="56" rx="14" fill="white" stroke="#e2e8f0"/>
+            <rect x="22" y="14" width="12" height="16" rx="2" fill="none" stroke="#0ea5e9" stroke-width="1.5"/>
+            <line x1="25" y1="20" x2="31" y2="20" stroke="#0ea5e9" stroke-width="1.2"/>
+            <line x1="25" y1="24" x2="31" y2="24" stroke="#0ea5e9" stroke-width="1.2"/>
+            <text x="28" y="47" text-anchor="middle" font-family="Geist, sans-serif" font-size="6" font-weight="500" fill="#0a1628">Rx</text>
+          </g>
+          
+          <rect x="14" y="294" width="172" height="68" rx="14" fill="white" stroke="#e2e8f0"/>
+          <text x="24" y="312" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#0a1628">This week</text>
+          <text x="24" y="324" font-family="Geist, sans-serif" font-size="7" fill="#64748b">Activity trend</text>
+          <polyline points="22,352 38,348 54,344 70,338 86,340 102,332 118,328 134,322 150,318 166,314 182,310" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="22,352 38,348 54,344 70,338 86,340 102,332 118,328 134,322 150,318 166,314 182,310 182,358 22,358 z" fill="url(#p2-chart)"/>
+          <circle cx="166" cy="314" r="3" fill="white" stroke="#0ea5e9" stroke-width="2"/>
+          <text x="148" y="338" font-family="Geist, sans-serif" font-size="9" font-weight="600" fill="#0369a1">+12%</text>
+        </g>
+
+        <!-- Floating notification -->
+        <g class="anim-float" transform="translate(380, 30)">
+          <rect width="170" height="56" rx="14" fill="white" filter="url(#p2-shadow)"/>
+          <circle cx="22" cy="28" r="14" fill="url(#p2-accent)"/>
+          <path d="M14 28 L20 34 L30 22" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="44" y="22" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#0a1628">Lab results ready</text>
+          <text x="44" y="34" font-family="Geist, sans-serif" font-size="7" fill="#64748b">Blood work · 2 min ago</text>
+          <text x="44" y="46" font-family="Geist, sans-serif" font-size="7" fill="#0369a1" font-weight="500">View report →</text>
+        </g>
+
+        <!-- Pill card -->
+        <g class="anim-float-sm" transform="translate(420, 170)" style="animation-delay: -1.5s;">
+          <rect width="120" height="78" rx="14" fill="white" filter="url(#p2-shadow)"/>
+          <g transform="translate(14, 14) rotate(-20 22 22)">
+            <rect x="0" y="14" width="44" height="16" rx="8" fill="#fda4af"/>
+            <rect x="0" y="14" width="22" height="16" rx="8" fill="#fcd34d"/>
+            <ellipse cx="22" cy="22" rx="1.5" ry="6" fill="rgba(0,0,0,0.1)"/>
+          </g>
+          <text x="64" y="22" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#0a1628">Amlodipine</text>
+          <text x="64" y="34" font-family="Geist, sans-serif" font-size="7" fill="#64748b">5mg · 1 daily</text>
+          <rect x="14" y="56" width="92" height="12" rx="6" fill="rgba(94,234,212,0.15)"/>
+          <text x="60" y="65" text-anchor="middle" font-family="Geist, sans-serif" font-size="7" font-weight="600" fill="#0d9488">Refill auto-ordered</text>
+        </g>
+
+        <!-- Delivery card -->
+        <g class="anim-float" transform="translate(395, 290)" style="animation-delay: -0.5s;">
+          <rect width="150" height="80" rx="14" fill="white" filter="url(#p2-shadow)"/>
+          <g transform="translate(14, 22)">
+            <rect x="0" y="6" width="28" height="20" rx="3" fill="#0ea5e9"/>
+            <path d="M28 12 L42 12 L46 18 L46 26 L28 26 Z" fill="#38bdf8"/>
+            <circle cx="10" cy="28" r="4" fill="#0a1628"/>
+            <circle cx="10" cy="28" r="2" fill="#5eead4"/>
+            <circle cx="38" cy="28" r="4" fill="#0a1628"/>
+            <circle cx="38" cy="28" r="2" fill="#5eead4"/>
+            <path d="M32 17 L40 17 M32 20 L40 20" stroke="#0369a1" stroke-width="0.8"/>
+          </g>
+          <text x="76" y="28" font-family="Geist, sans-serif" font-size="8" font-weight="600" fill="#0a1628">On the way</text>
+          <text x="76" y="40" font-family="Geist, sans-serif" font-size="7" fill="#64748b">Arrives 2:30 PM</text>
+          <rect x="14" y="58" width="122" height="4" rx="2" fill="#e2e8f0"/>
+          <rect x="14" y="58" width="82" height="4" rx="2" fill="url(#p2-accent)"/>
+          <text x="14" y="74" font-family="Geist, sans-serif" font-size="7" fill="#0d9488">Out for delivery</text>
+        </g>
+
+        <path d="M170 50 L176 50 M173 47 L173 53" stroke="#5eead4" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="170" cy="430" r="3" fill="#5eead4" class="anim-pulse-soft"/>
+        <path d="M520 420 L526 420 M523 417 L523 423" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round" class="anim-pulse-soft" style="animation-delay: -1.2s;"/>
+        <circle cx="40" cy="60" r="2" fill="white" opacity="0.6"/>
+        <circle cx="540" cy="280" r="2" fill="white" opacity="0.5"/>
+      </svg>

@@ -4,6 +4,8 @@
 
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /** Auth / marketing display — matches static `index.html` auth mockups */
+  --font-display: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
 
   /* Landing / marketing */
   --color-brand-cyan: #09d1e7;
@@ -143,4 +145,116 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='90' viewBox='0 0 52 90'%3E%3Cg fill='none' stroke='%232083ff' stroke-width='1' opacity='1'%3E%3Cpath d='M26 0 L52 15 L52 45 L26 60 L0 45 L0 15 Z'/%3E%3Cpath d='M26 30 L52 45 L52 75 L26 90 L0 75 L0 45 Z'/%3E%3C/g%3E%3C/svg%3E");
     background-size: 52px 90px;
   }
+
+  /** Auth layout — left pane (aligned with repo `index.html` auth reference) */
+  .bg-auth-visual {
+    background: linear-gradient(155deg, #04132a 0%, #0a2545 35%, #0d3a6e 75%, #1456a3 100%);
+  }
+
+  /** Auth — right pane soft grid + cool wash */
+  .bg-auth-form-canvas {
+    background-color: #fafbfd;
+    background-image:
+      linear-gradient(rgba(241, 245, 249, 0.9) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(241, 245, 249, 0.9) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 85% 65% at 70% 28%, black 0%, transparent 72%);
+  }
+}
+
+/* Auth hero SVGs — motion hooks copied from root `index.html` auth mockups */
+@keyframes auth-hero-float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes auth-hero-float-y-sm {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes auth-hero-pulse-soft {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes auth-hero-spin-slow {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes auth-hero-heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.08);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.05);
+  }
+  60% {
+    transform: scale(1);
+  }
+}
+@keyframes auth-hero-typing {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.auth-hero-svg .anim-float {
+  animation: auth-hero-float-y 5s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.auth-hero-svg .anim-float-sm {
+  animation: auth-hero-float-y-sm 4s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.auth-hero-svg .anim-pulse-soft {
+  animation: auth-hero-pulse-soft 3s ease-in-out infinite;
+}
+.auth-hero-svg .anim-spin-slow {
+  animation: auth-hero-spin-slow 50s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.auth-hero-svg .anim-heartbeat {
+  animation: auth-hero-heartbeat 1.8s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.auth-hero-svg .anim-typing-1 {
+  animation: auth-hero-typing 1.4s ease-in-out infinite;
+}
+.auth-hero-svg .anim-typing-2 {
+  animation: auth-hero-typing 1.4s ease-in-out infinite 0.2s;
+}
+.auth-hero-svg .anim-typing-3 {
+  animation: auth-hero-typing 1.4s ease-in-out infinite 0.4s;
 }

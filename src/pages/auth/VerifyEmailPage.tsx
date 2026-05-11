@@ -2,8 +2,8 @@ import { Helmet } from 'react-helmet-async';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { AuthEyebrow } from '@/components/auth/AuthEyebrow';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { verifyEmail } from '@/features/auth/api';
 import { normalizeAxiosError } from '@/lib/api/errors';
 import { ROUTES } from '@/router/routes';
@@ -42,25 +42,29 @@ export default function VerifyEmailPage() {
       <Helmet>
         <title>Verify email — MRD Online Clinic</title>
       </Helmet>
-      <Card className="border-0 shadow-none sm:border sm:shadow-sm">
-        <CardHeader>
-          <CardTitle>Email verification</CardTitle>
-          <CardDescription>
-            {token ? 'Confirming your token with the server…' : 'Missing token in the link.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          {state === 'loading' ? <p>Please wait.</p> : null}
-          {state === 'ok' ? <p className="text-foreground">You are verified.</p> : null}
-          {state === 'err' && token ? <p className="text-destructive">Verification failed.</p> : null}
-          {!token ? <p className="text-destructive">Open the link from your email, or request help.</p> : null}
-        </CardContent>
-        <CardFooter>
-          <Button asChild variant="secondary">
-            <Link to={ROUTES.login}>Go to log in</Link>
-          </Button>
-        </CardFooter>
-      </Card>
+      <div className="space-y-1">
+        <AuthEyebrow>Email verification</AuthEyebrow>
+        <h1 className="font-display text-[clamp(1.85rem,4vw,2.5rem)] font-normal leading-[1.08] tracking-[-0.02em] text-brand-navy">
+          Confirm your <em className="text-brand-hero-blue not-italic">inbox.</em>
+        </h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-brand-body">
+          {token ? 'Confirming your token with the server…' : 'Missing token in the link.'}
+        </p>
+      </div>
+
+      <div className="mt-8 space-y-3 text-[15px] text-brand-body">
+        {state === 'loading' ? <p>Please wait.</p> : null}
+        {state === 'ok' ? <p className="font-medium text-brand-navy">You are verified.</p> : null}
+        {state === 'err' && token ? <p className="text-destructive">Verification failed.</p> : null}
+        {!token ? <p className="text-destructive">Open the link from your email, or request help.</p> : null}
+      </div>
+
+      <Button
+        asChild
+        className="mt-8 flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-800 text-[14px] font-semibold text-white shadow-[0_8px_20px_rgba(14,165,233,0.28)] hover:brightness-[1.03]"
+      >
+        <Link to={ROUTES.login}>Go to log in</Link>
+      </Button>
     </>
   );
 }
