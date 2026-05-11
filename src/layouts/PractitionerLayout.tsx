@@ -24,6 +24,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { logout } from '@/features/auth/api';
+import { PractitionerSlotManagerProvider, usePractitionerSlotManager } from '@/features/practitioners/practitioner-slot-manager';
 import { getPractitionerMe, listPractitionerAppointments } from '@/features/practitioners/session-api';
 import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/router/routes';
@@ -219,7 +220,8 @@ function SidebarChrome({
 const sidebarShell =
   'relative flex h-dvh w-[260px] shrink-0 flex-col gap-2 overflow-y-auto bg-gradient-to-b from-[#04132a] to-[#0a2545] px-[18px] pb-6 pt-6 before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_60%_30%_at_50%_0%,rgba(56,189,248,0.15),transparent_70%),radial-gradient(ellipse_50%_30%_at_50%_100%,rgba(94,234,212,0.1),transparent_70%)]';
 
-export function PractitionerLayout() {
+function PractitionerLayoutInner() {
+  const { openSlotManager } = usePractitionerSlotManager();
   const user = useAuthStore((s) => s.user);
   const clearSession = useAuthStore((s) => s.clearSession);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -373,13 +375,13 @@ export function PractitionerLayout() {
               <HelpCircle className="h-[17px] w-[17px]" strokeWidth={2} />
             </button>
             <Button
-              asChild
-              className="hidden h-9 gap-1.5 rounded-[9px] bg-gradient-to-br from-teal-500 to-teal-700 px-4 text-[13px] font-medium text-white shadow-[0_4px_12px_rgba(20,184,166,0.25)] hover:from-teal-600 hover:to-teal-800 sm:inline-flex"
+              type="button"
+              onClick={openSlotManager}
+              className="h-9 gap-1.5 rounded-[9px] bg-gradient-to-br from-teal-500 to-teal-700 px-3 text-[13px] font-medium text-white shadow-[0_4px_12px_rgba(20,184,166,0.25)] hover:from-teal-600 hover:to-teal-800 sm:px-4"
+              title="Add visit availability"
             >
-              <Link to={ROUTES.practitioner.availability}>
-                <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                Create slot
-              </Link>
+              <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
+              <span className="hidden sm:inline">Create slot</span>
             </Button>
             <Link
               to={ROUTES.practitioner.profile}
@@ -461,5 +463,13 @@ export function PractitionerLayout() {
         onConfirm={performLogout}
       />
     </div>
+  );
+}
+
+export function PractitionerLayout() {
+  return (
+    <PractitionerSlotManagerProvider>
+      <PractitionerLayoutInner />
+    </PractitionerSlotManagerProvider>
   );
 }

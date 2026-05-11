@@ -12,6 +12,7 @@ import {
 } from '@/features/practitioners/public-api';
 import { listPublicSpecialties } from '@/features/specialties/api';
 import { ROUTES } from '@/router/routes';
+import { useAuthStore } from '@/stores/auth-store';
 
 function parseSort(v: string | null): DirectorySort {
   if (v === 'experience' || v === 'createdAt' || v === 'rating') return v;
@@ -36,6 +37,7 @@ function formatPracticeLocation(p: PractitionerDirectoryItem): string | null {
 }
 
 export default function FindADoctorPage() {
+  const user = useAuthStore((s) => s.user);
   const [searchParams, setSearchParams] = useSearchParams();
   const [draft, setDraft] = useState<FindDoctorDraft>(() => readDraftFromParams(searchParams));
 
@@ -183,14 +185,25 @@ export default function FindADoctorPage() {
                           ) : null}
                         </div>
                       </div>
-                      <Button
-                        asChild
-                        className="mt-5 w-full rounded-xl border border-slate-200 bg-white text-[13px] font-semibold text-brand-navy shadow-sm hover:bg-slate-50"
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Link to={ROUTES.findDoctorProfile(id)}>View profile</Link>
-                      </Button>
+                      <div className="mt-5 flex gap-2">
+                        <Button
+                          asChild
+                          className="flex-1 rounded-xl border border-slate-200 bg-white text-[13px] font-semibold text-brand-navy shadow-sm hover:bg-slate-50"
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Link to={ROUTES.findDoctorProfile(id)}>Profile</Link>
+                        </Button>
+                        {user?.role === 'PATIENT' ? (
+                          <Button
+                            asChild
+                            size="sm"
+                            className="flex-1 rounded-xl border-0 bg-gradient-to-br from-teal-500 to-teal-700 text-[13px] font-semibold text-white shadow-sm hover:from-teal-600 hover:to-teal-800"
+                          >
+                            <Link to={ROUTES.patient.book(id)}>Book</Link>
+                          </Button>
+                        ) : null}
+                      </div>
                     </li>
                   );
                 })}

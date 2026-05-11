@@ -26,6 +26,7 @@ import {
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { PractitionerOpenSlotsSummary } from '@/features/practitioners/practitioner-slot-manager';
 import { getPractitionerMe, listPractitionerAppointments } from '@/features/practitioners/session-api';
 import { ROUTES } from '@/router/routes';
 import { cn } from '@/lib/utils/cn';
@@ -447,6 +448,8 @@ export default function PractitionerDashboardPage() {
                 <p className="text-sm text-muted-foreground">No appointments scheduled for today.</p>
               ) : null}
             </section>
+
+            <PractitionerOpenSlotsSummary />
 
             <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
               <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
