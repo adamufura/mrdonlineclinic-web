@@ -1,11 +1,51 @@
+import { type FormEvent, useState } from 'react';
 import { Lock, Mail, MapPin, Phone, User } from 'lucide-react';
 import { Link, Outlet } from 'react-router-dom';
+import { toast } from 'sonner';
+import { MarketingFooterSocial } from '@/components/marketing/MarketingFooterSocial';
+import { MarketingLocationMap } from '@/components/marketing/MarketingLocationMap';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ROUTES } from '@/router/routes';
 import { useAuthStore } from '@/stores/auth-store';
 
 const navLinkClass =
   'text-[15px] font-semibold text-brand-navy transition-colors hover:text-brand-cyan xl:text-[16px]';
+
+function NewsletterSignup() {
+  const [email, setEmail] = useState('');
+
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed) {
+      toast.error('Please enter your email.');
+      return;
+    }
+    toast.success('Thanks for subscribing — we will keep you posted.');
+    setEmail('');
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="mt-4 flex w-full max-w-md gap-0">
+      <Input
+        type="email"
+        name="newsletter-email"
+        autoComplete="email"
+        placeholder="Enter Email"
+        value={email}
+        onChange={(ev) => setEmail(ev.target.value)}
+        className="h-11 min-w-0 flex-1 rounded-l-xl rounded-r-none border-brand-stroke-soft bg-white text-sm shadow-sm focus-visible:ring-brand-hero-blue/35"
+      />
+      <Button
+        type="submit"
+        className="h-11 shrink-0 rounded-l-none rounded-r-xl bg-brand-hero-blue px-5 text-sm font-semibold text-white shadow-sm hover:bg-brand-navy"
+      >
+        Submit
+      </Button>
+    </form>
+  );
+}
 
 function Logo() {
   return (
@@ -111,32 +151,29 @@ export function MarketingLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
-      <footer className="border-t border-brand-stroke-soft bg-white">
-        <div className="mx-auto w-full max-w-site px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
+      <MarketingLocationMap />
+      <footer className="border-t border-brand-stroke-soft bg-[#f4f9fc]">
+        <div className="mx-auto w-full max-w-site px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-2 xl:grid-cols-5 xl:gap-10">
             {/* Brand */}
             <div>
               <Logo />
-              <p className="mt-4 text-sm leading-relaxed text-brand-body">
-                Connect with verified healthcare practitioners for consultations, prescriptions, and ongoing care —
-                entirely online.
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-brand-body">
+                Effortlessly schedule your medical appointments with MRD Online Clinic. Connect with healthcare
+                professionals, manage appointments, and prioritize your wellbeing.
               </p>
             </div>
 
-            {/* Quick links */}
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-brand-navy">Quick Links</h3>
+              <h3 className="text-base font-bold text-brand-navy">Company</h3>
               <ul className="mt-4 space-y-2.5">
                 {[
                   { label: 'Home', to: ROUTES.home },
-                  { label: 'Find a Doctor', to: ROUTES.findDoctor },
-                  { label: 'Specialties', to: ROUTES.specialties },
-                  { label: 'How It Works', to: ROUTES.howItWorks },
-                  { label: 'FAQ', to: ROUTES.faq },
-                  { label: 'Contact Us', to: ROUTES.contact },
+                  { label: 'Specialities', to: ROUTES.specialties },
+                  { label: 'Video Consult', to: ROUTES.findDoctor },
                 ].map((l) => (
                   <li key={l.label}>
-                    <Link to={l.to} className="text-sm text-brand-body transition-colors hover:text-brand-cyan">
+                    <Link to={l.to} className="text-sm text-brand-body transition-colors hover:text-brand-hero-blue">
                       {l.label}
                     </Link>
                   </li>
@@ -144,18 +181,16 @@ export function MarketingLayout() {
               </ul>
             </div>
 
-            {/* For patients */}
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-brand-navy">For Patients</h3>
+              <h3 className="text-base font-bold text-brand-navy">Specialities</h3>
               <ul className="mt-4 space-y-2.5">
                 {[
-                  { label: 'Register as Patient', to: ROUTES.registerPatient },
-                  { label: 'Book Appointment', to: ROUTES.findDoctor },
-                  { label: 'Patient Portal', to: ROUTES.patient.dashboard },
-                  { label: 'Join as a Doctor', to: ROUTES.registerPractitioner },
+                  { label: 'Neurology', to: ROUTES.specialties },
+                  { label: 'Cardiologist', to: ROUTES.specialties },
+                  { label: 'Dentist', to: ROUTES.specialties },
                 ].map((l) => (
                   <li key={l.label}>
-                    <Link to={l.to} className="text-sm text-brand-body transition-colors hover:text-brand-cyan">
+                    <Link to={l.to} className="text-sm text-brand-body transition-colors hover:text-brand-hero-blue">
                       {l.label}
                     </Link>
                   </li>
@@ -163,51 +198,60 @@ export function MarketingLayout() {
               </ul>
             </div>
 
-            {/* Contact */}
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-brand-navy">Contact</h3>
-              <ul className="mt-4 space-y-3">
+              <h3 className="text-base font-bold text-brand-navy">Contact Us</h3>
+              <ul className="mt-4 space-y-3.5">
+                <li className="flex items-start gap-2.5 text-sm text-brand-body">
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-brand-navy" aria-hidden />
+                  <span>
+                    Abba Saude House
+                    <br />
+                    Katsina, Nigeria
+                  </span>
+                </li>
+                <li>
+                  <a
+                    href="tel:+2348166644083"
+                    className="flex items-center gap-2.5 text-sm text-brand-body transition-colors hover:text-brand-hero-blue"
+                  >
+                    <Phone className="size-4 shrink-0 text-brand-navy" aria-hidden />
+                    08166644083
+                  </a>
+                </li>
                 <li>
                   <a
                     href="mailto:contact@mrdonlineclinic.com"
-                    className="flex items-center gap-2.5 text-sm text-brand-body transition-colors hover:text-brand-cyan"
+                    className="flex items-center gap-2.5 text-sm text-brand-body transition-colors hover:text-brand-hero-blue"
                   >
-                    <Mail className="size-4 shrink-0 text-brand-cyan" aria-hidden />
+                    <Mail className="size-4 shrink-0 text-brand-navy" aria-hidden />
                     contact@mrdonlineclinic.com
                   </a>
                 </li>
-                <li>
-                  <a
-                    href="tel:+2348000000000"
-                    className="flex items-center gap-2.5 text-sm text-brand-body transition-colors hover:text-brand-cyan"
-                  >
-                    <Phone className="size-4 shrink-0 text-brand-cyan" aria-hidden />
-                    +234 800 000 0000
-                  </a>
-                </li>
-                <li className="flex items-start gap-2.5 text-sm text-brand-body">
-                  <MapPin className="mt-0.5 size-4 shrink-0 text-brand-cyan" aria-hidden />
-                  Lagos, Nigeria
-                </li>
               </ul>
+            </div>
+
+            <div>
+              <h3 className="text-base font-bold text-brand-navy">Join Our Newsletter</h3>
+              <NewsletterSignup />
+              <MarketingFooterSocial />
             </div>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="border-t border-brand-stroke-soft py-6">
-          <div className="mx-auto flex w-full max-w-site flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-            <p className="text-sm text-brand-body">
-              © {new Date().getFullYear()} MRD Online Clinic · Telemedicine you can trust
+        <div className="border-t border-brand-stroke-soft bg-[#eef5f9] py-5">
+          <div className="mx-auto flex w-full max-w-site flex-col items-center justify-between gap-3 px-4 text-sm text-brand-body sm:flex-row sm:px-6 lg:px-8">
+            <p>Copyright © {new Date().getFullYear()} MRD Online Clinic. All Rights Reserved</p>
+            <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+              <Link to="/privacy" className="transition-colors hover:text-brand-hero-blue">
+                Privacy Policy
+              </Link>
+              <span className="text-brand-body/40" aria-hidden>
+                |
+              </span>
+              <Link to="/terms" className="transition-colors hover:text-brand-hero-blue">
+                Terms &amp; Conditions
+              </Link>
             </p>
-            <div className="flex gap-5">
-              <Link to="/privacy" className="text-sm text-brand-body transition-colors hover:text-brand-cyan">
-                Privacy
-              </Link>
-              <Link to="/terms" className="text-sm text-brand-body transition-colors hover:text-brand-cyan">
-                Terms
-              </Link>
-            </div>
           </div>
         </div>
       </footer>

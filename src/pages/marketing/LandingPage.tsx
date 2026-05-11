@@ -126,8 +126,8 @@ const AV_ROUND = [
 
 const TESTIMONIALS = [
   {
-    name: 'Amara Osei',
-    location: 'Lagos, Nigeria',
+    name: 'Aisha Ahmad',
+    location: 'Katsina, Nigeria',
     rating: 5,
     quote:
       'MRD Online Clinic made it so easy to find a specialist. I booked, had my consult, and received my prescription — all within the same day.',
