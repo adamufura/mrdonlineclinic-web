@@ -6,7 +6,7 @@ const BLOOD = ['A_POS', 'A_NEG', 'B_POS', 'B_NEG', 'AB_POS', 'AB_NEG', 'O_POS', 
 /** Mirrors backend `updatePatientProfileSchema` (selects may send "" for unset). */
 export const patientProfileFormSchema = z.object({
   firstName: z.string().min(1).max(100),
-  middleName: z.string().max(100).optional(),
+  middleName: z.string().min(1, 'Middle name is required').max(100),
   lastName: z.string().min(1).max(100),
   phoneNumber: z.string().min(5).max(30),
   dateOfBirth: z.string().optional(),
@@ -25,7 +25,7 @@ export type PatientProfileFormValues = z.infer<typeof patientProfileFormSchema>;
 export function profileFormToPatch(values: PatientProfileFormValues): Record<string, unknown> {
   const patch: Record<string, unknown> = {
     firstName: values.firstName,
-    middleName: values.middleName?.trim() ? values.middleName.trim() : undefined,
+    middleName: values.middleName.trim(),
     lastName: values.lastName,
     phoneNumber: values.phoneNumber,
   };

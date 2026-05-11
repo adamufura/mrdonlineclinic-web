@@ -2,10 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { useForm, useWatch } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { ArrowRight, Lock, Mail, Phone, Stethoscope, UserRound } from 'lucide-react';
+import { ArrowRight, ChevronDown, Loader2, Lock, Mail, Phone, Stethoscope, UserRound } from 'lucide-react';
+import { AccountCreatingOverlay } from '@/components/auth/AccountCreatingOverlay';
 import { AuthDividerOr } from '@/components/auth/AuthDividerOr';
 import { AuthEyebrow } from '@/components/auth/AuthEyebrow';
 import { AuthSocialButtons } from '@/components/auth/AuthSocialButtons';
@@ -17,19 +18,17 @@ import { registerPractitioner } from '@/features/auth/api';
 import { listPublicSpecialties } from '@/features/specialties/api';
 import { normalizeAxiosError } from '@/lib/api/errors';
 import { mongoIdSchema, strongPasswordSchema } from '@/lib/validators/auth';
-import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/router/routes';
 
 const schema = z
   .object({
     firstName: z.string().min(1, 'Required'),
-    middleName: z.string().optional(),
     lastName: z.string().min(1, 'Required'),
     email: z.string().email(),
     phoneNumber: z.string().min(5, 'Enter a valid phone number'),
     password: strongPasswordSchema,
     confirmPassword: z.string(),
-    specialties: z.array(mongoIdSchema).min(1, 'Select at least one specialty'),
+    specialtyId: z.string().min(1, 'Select a specialty').pipe(mongoIdSchema),
     acceptTerms: z.boolean().refine((v) => v === true, { message: 'You must accept the terms' }),
   })
   .refine((d) => d.password === d.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' });
@@ -37,6 +36,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export default function PractitionerRegisterPage() {
+  const navigate = useNavigate();
   const specialtiesQuery = useQuery({
     queryKey: ['specialties', 'public'],
     queryFn: listPublicSpecialties,
@@ -46,31 +46,26 @@ export default function PractitionerRegisterPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       firstName: '',
-      middleName: '',
       lastName: '',
       email: '',
       phoneNumber: '',
       password: '',
       confirmPassword: '',
-      specialties: [],
+      specialtyId: '',
       acceptTerms: false,
     },
   });
 
-  const selected = useWatch({ control: form.control, name: 'specialties', defaultValue: [] });
   const pwd = useWatch({ control: form.control, name: 'password', defaultValue: '' });
-
-  function toggleSpecialty(id: string) {
-    const set = new Set(selected);
-    if (set.has(id)) set.delete(id);
-    else set.add(id);
-    form.setValue('specialties', [...set], { shouldValidate: true });
-  }
 
   const mutation = useMutation({
     mutationFn: registerPractitioner,
-    onSuccess: () => {
-      toast.success('Check your email to verify your account.');
+    onSuccess: (res, variables) => {
+      toast.success(res.message);
+      void navigate({
+        pathname: ROUTES.login,
+        search: `?email=${encodeURIComponent(variables.email)}`,
+      });
     },
     onError: (e) => {
       toast.error(normalizeAxiosError(e).message);
@@ -79,6 +74,7 @@ export default function PractitionerRegisterPage() {
 
   return (
     <>
+      <AccountCreatingOverlay open={mutation.isPending} />
       <Helmet>
         <title>Practitioner registration — MRD Online Clinic</title>
       </Helmet>
@@ -88,56 +84,18 @@ export default function PractitionerRegisterPage() {
           Join MRD as a <em className="text-brand-hero-blue not-italic">clinician.</em>
         </h1>
         <p className="mt-2 max-w-md text-[14px] leading-snug text-brand-body sm:text-[15px] sm:leading-relaxed">
-          After you verify your email, you will complete your professional profile and submit credentials for admin review
-          before accepting patients.
+          After you sign in, you can complete your professional profile and submit credentials for admin review before
+          accepting patients.
         </p>
       </div>
 
       <form
-        className="mt-5 grid grid-cols-2 gap-x-3 gap-y-3"
-        onSubmit={form.handleSubmit(({ firstName, middleName, lastName, email, phoneNumber, password, specialties }) => {
-          mutation.mutate({ firstName, middleName, lastName, email, phoneNumber, password, specialties });
+        className="mt-5 grid grid-cols-2 gap-3"
+        onSubmit={form.handleSubmit(({ firstName, lastName, email, phoneNumber, password, specialtyId }) => {
+          mutation.mutate({ firstName, lastName, email, phoneNumber, password, specialties: [specialtyId] });
         })}
       >
-        <div className="col-span-2 space-y-1.5">
-          <Label className="inline-flex items-center gap-2 text-[12px] font-medium text-slate-700">
-            <Stethoscope className="size-3.5 text-slate-400" aria-hidden />
-            Specialties
-          </Label>
-          {specialtiesQuery.isLoading ? (
-            <p className="text-sm text-brand-body">Loading specialties…</p>
-          ) : specialtiesQuery.isError ? (
-            <p className="text-sm text-destructive">Could not load specialties. Is the API running?</p>
-          ) : (
-            <ul className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/80 p-2 text-sm">
-              {specialtiesQuery.data?.map((s) => {
-                const on = selected.includes(s.id);
-                return (
-                  <li key={s.id}>
-                    <button
-                      type="button"
-                      onClick={() => toggleSpecialty(s.id)}
-                      className={cn(
-                        'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-brand-navy transition hover:bg-white',
-                        on && 'bg-white font-semibold shadow-sm ring-1 ring-sky-400/35',
-                      )}
-                    >
-                      {s.name}
-                      <span className={cn('text-xs', on ? 'text-sky-700' : 'text-brand-body')}>
-                        {on ? 'Selected' : 'Tap to select'}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {form.formState.errors.specialties ? (
-            <p className="text-sm text-destructive">{form.formState.errors.specialties.message}</p>
-          ) : null}
-        </div>
-
-        <div className="col-span-2 space-y-1.5">
+        <div className="space-y-1.5">
           <Label htmlFor="firstName" className="text-[12px] font-medium text-slate-700">
             First name
           </Label>
@@ -152,20 +110,6 @@ export default function PractitionerRegisterPage() {
           {form.formState.errors.firstName ? (
             <p className="text-sm text-destructive">{form.formState.errors.firstName.message}</p>
           ) : null}
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="middleName" className="text-[12px] font-medium text-slate-700">
-            Middle name <span className="font-normal text-slate-400">(optional)</span>
-          </Label>
-          <div className="relative">
-            <UserRound className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
-            <Input
-              id="middleName"
-              className="rounded-xl border-slate-200 pl-12 focus-visible:border-sky-500 focus-visible:ring-sky-500/20"
-              {...form.register('middleName')}
-            />
-          </div>
         </div>
 
         <div className="space-y-1.5">
@@ -185,7 +129,7 @@ export default function PractitionerRegisterPage() {
           ) : null}
         </div>
 
-        <div className="space-y-1.5">
+        <div className="col-span-2 space-y-1.5">
           <Label htmlFor="email" className="text-[12px] font-medium text-slate-700">
             Email address
           </Label>
@@ -203,7 +147,36 @@ export default function PractitionerRegisterPage() {
           ) : null}
         </div>
 
-        <div className="space-y-1.5">
+        <div className="col-span-2 space-y-1.5">
+          <Label htmlFor="specialtyId" className="text-[12px] font-medium text-slate-700">
+            Specialty
+          </Label>
+          <div className="relative">
+            <Stethoscope className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
+            <select
+              id="specialtyId"
+              disabled={specialtiesQuery.isLoading || specialtiesQuery.isError}
+              className="flex h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white py-2 pl-12 pr-10 text-[15px] text-slate-900 shadow-sm transition-colors focus-visible:border-sky-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900"
+              {...form.register('specialtyId')}
+            >
+              <option value="">Select a specialty</option>
+              {specialtiesQuery.data?.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
+          </div>
+          {specialtiesQuery.isError ? (
+            <p className="text-sm text-destructive">Could not load specialties. Is the API running?</p>
+          ) : null}
+          {form.formState.errors.specialtyId ? (
+            <p className="text-sm text-destructive">{form.formState.errors.specialtyId.message}</p>
+          ) : null}
+        </div>
+
+        <div className="col-span-2 space-y-1.5">
           <Label htmlFor="phoneNumber" className="text-[12px] font-medium text-slate-700">
             Phone number
           </Label>
@@ -278,11 +251,20 @@ export default function PractitionerRegisterPage() {
 
         <Button
           type="submit"
-          disabled={mutation.isPending || specialtiesQuery.isLoading}
+          disabled={mutation.isPending || specialtiesQuery.isLoading || specialtiesQuery.isError}
           className="col-span-2 mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sky-500 to-sky-800 text-[15px] font-semibold text-white shadow-[0_8px_20px_rgba(14,165,233,0.28)] transition hover:brightness-[1.03] disabled:opacity-60"
         >
-          {mutation.isPending ? 'Creating account…' : 'Create my account'}
-          {!mutation.isPending ? <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden /> : null}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="size-5 shrink-0 animate-spin" strokeWidth={2.5} aria-hidden />
+              Creating account…
+            </>
+          ) : (
+            <>
+              Create my account
+              <ArrowRight className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
+            </>
+          )}
         </Button>
       </form>
 

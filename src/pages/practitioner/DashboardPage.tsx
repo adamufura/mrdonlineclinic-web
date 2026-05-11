@@ -1,20 +1,53 @@
 import { useQuery } from '@tanstack/react-query';
-import { endOfDay, format, startOfDay } from 'date-fns';
+import {
+  ArrowRight,
+  Calendar,
+  Check,
+  Clock,
+  MessageSquare,
+  Star,
+  TrendingUp,
+  Users,
+  X,
+} from 'lucide-react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { format, formatDistanceToNow, startOfWeek, endOfWeek, startOfDay, endOfDay } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { listPractitionerAppointments } from '@/features/practitioners/session-api';
+import { getPractitionerMe, listPractitionerAppointments } from '@/features/practitioners/session-api';
 import { ROUTES } from '@/router/routes';
+import { cn } from '@/lib/utils/cn';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
+}
+
+function greetingLabel(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+const TERMINAL = new Set(['COMPLETED', 'CANCELLED', 'NO_SHOW', 'REJECTED']);
+
+function patientName(a: Record<string, unknown>): string {
+  const patient = isRecord(a.patient) ? (a.patient as Record<string, unknown>) : null;
+  return patient ? `${String(patient.firstName ?? '')} ${String(patient.lastName ?? '')}`.trim() || 'Patient' : 'Patient';
 }
 
 export default function PractitionerDashboardPage() {
   const today = new Date();
   const from = startOfDay(today);
   const to = endOfDay(today);
+  const weekFrom = startOfWeek(today, { weekStartsOn: 1 });
+  const weekTo = endOfWeek(today, { weekStartsOn: 1 });
+
+  const me = useQuery({
+    queryKey: ['practitioners', 'me'],
+    queryFn: getPractitionerMe,
+  });
 
   const todayAppts = useQuery({
     queryKey: ['practitioners', 'me', 'appointments', 'today', from.toISOString(), to.toISOString()],
@@ -32,12 +65,87 @@ export default function PractitionerDashboardPage() {
     queryFn: () => listPractitionerAppointments({ page: 1, limit: 20, status: 'PENDING' }),
   });
 
-  const items = [...(todayAppts.data?.items ?? [])].sort((a, b) => {
-    if (!isRecord(a) || !isRecord(b)) return 0;
-    const ta = a.scheduledStart ? new Date(String(a.scheduledStart)).getTime() : 0;
-    const tb = b.scheduledStart ? new Date(String(b.scheduledStart)).getTime() : 0;
-    return ta - tb;
+  const weekAppts = useQuery({
+    queryKey: ['practitioners', 'me', 'appointments', 'week', weekFrom.toISOString(), weekTo.toISOString()],
+    queryFn: () =>
+      listPractitionerAppointments({
+        page: 1,
+        limit: 200,
+        from: weekFrom,
+        to: weekTo,
+      }),
   });
+
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const items = useMemo(() => {
+    const raw = [...(todayAppts.data?.items ?? [])];
+    return raw.sort((a, b) => {
+      if (!isRecord(a) || !isRecord(b)) return 0;
+      const ta = a.scheduledStart ? new Date(String(a.scheduledStart)).getTime() : 0;
+      const tb = b.scheduledStart ? new Date(String(b.scheduledStart)).getTime() : 0;
+      return ta - tb;
+    });
+  }, [todayAppts.data?.items]);
+
+  const now = new Date(nowTick);
+  const nextId = useMemo(() => {
+    for (const a of items) {
+      if (!isRecord(a) || !a.scheduledStart || !a._id) continue;
+      const t = new Date(String(a.scheduledStart)).getTime();
+      const st = String(a.status ?? '');
+      if (t >= now.getTime() && ['PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(st)) {
+        return String(a._id);
+      }
+    }
+    return null;
+  }, [items, nowTick]);
+
+  const completedToday = items.filter((a) => isRecord(a) && String(a.status) === 'COMPLETED').length;
+  const totalToday = items.length;
+  const toGo = Math.max(0, totalToday - completedToday);
+
+  const weekItems = weekAppts.data?.items ?? [];
+  const completedThisWeek = weekItems.filter((a) => isRecord(a) && String(a.status) === 'COMPLETED').length;
+
+  const chartBuckets = useMemo(() => {
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    for (const a of weekItems) {
+      if (!isRecord(a) || !a.scheduledStart) continue;
+      const d = new Date(String(a.scheduledStart));
+      const dow = d.getDay();
+      const idx = dow === 0 ? 6 : dow - 1;
+      counts[idx] += 1;
+    }
+    const max = Math.max(...counts, 1);
+    const todayDow = today.getDay();
+    const todayIdx = todayDow === 0 ? 6 : todayDow - 1;
+    return labels.map((label, i) => ({
+      label,
+      count: counts[i],
+      h: Math.round((counts[i] / max) * 100),
+      isToday: i === todayIdx,
+    }));
+  }, [weekItems, today]);
+
+  const lastName = typeof me.data?.lastName === 'string' ? me.data.lastName : '';
+  const rating = typeof me.data?.averageRating === 'number' ? me.data.averageRating : null;
+  const reviewCount = typeof me.data?.totalReviews === 'number' ? me.data.totalReviews : 0;
+
+  const pendingTotal = pending.data?.meta.total ?? 0;
+  const pendingItems = pending.data?.items ?? [];
+
+  const first = items[0] as Record<string, unknown> | undefined;
+  const last = items[items.length - 1] as Record<string, unknown> | undefined;
+  const scheduleRange =
+    first?.scheduledStart && last?.scheduledStart
+      ? `${format(new Date(String(first.scheduledStart)), 'h:mm a')} – ${format(new Date(String(last.scheduledStart)), 'h:mm a')}`
+      : null;
 
   return (
     <>
@@ -45,58 +153,173 @@ export default function PractitionerDashboardPage() {
         <title>Practitioner dashboard — MRD Online Clinic</title>
         <meta name="robots" content="noindex" />
       </Helmet>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Today&apos;s schedule uses <code className="rounded bg-muted px-1">GET /api/v1/practitioners/me/appointments</code>{' '}
-            with <code className="rounded bg-muted px-1">from</code> / <code className="rounded bg-muted px-1">to</code> set to
-            the current local day (ISO strings). Pending requests use the same endpoint with{' '}
-            <code className="rounded bg-muted px-1">status=PENDING</code>.
-          </p>
+
+      <div className="space-y-7">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-teal-500/15 bg-teal-500/10 px-3 py-1 text-xs font-medium text-teal-800">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-500" />
+              {format(today, 'EEEE, MMM d')} · Day view
+            </p>
+            <h1 className="font-display text-3xl font-normal tracking-tight text-[#0a1628] sm:text-[38px] sm:leading-[1.1]">
+              {greetingLabel()}, <em className="font-medium not-italic text-teal-700">Dr. {lastName || '—'}</em>
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-[#64748b]">
+              You have <span className="font-semibold text-[#0a1628]">{totalToday}</span> visits today
+              {pendingTotal > 0 ? (
+                <>
+                  {' '}
+                  and <span className="font-semibold text-rose-600">{pendingTotal}</span> request
+                  {pendingTotal === 1 ? '' : 's'} awaiting your decision.
+                </>
+              ) : (
+                <> and no pending booking requests.</>
+              )}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-6 text-sm text-[#64748b]">
+            {rating != null ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                <span className="font-semibold text-[#0a1628]">{rating.toFixed(1)}</span>
+                <span>· {reviewCount} reviews</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">No rating yet</span>
+            )}
+            <span className="inline-flex items-center gap-1.5">
+              <MessageSquare className="h-4 w-4" />
+              <span className="text-[#0a1628]">Inbox</span>
+            </span>
+          </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-3xl tabular-nums">{items.length}</CardTitle>
-              <CardDescription>Appointments today</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-3xl tabular-nums">{pending.data?.meta.total ?? '—'}</CardTitle>
-              <CardDescription>Pending requests (total)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="outline" size="sm">
-                <Link to={ROUTES.practitioner.appointments}>Review appointments</Link>
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            tone="blue"
+            icon={Calendar}
+            label="Today's visits"
+            value={totalToday}
+            meta={`${completedToday} completed · ${toGo} to go`}
+          />
+          <StatCard
+            tone="warm"
+            icon={Clock}
+            label="Pending requests"
+            value={pendingTotal}
+            meta={
+              pendingTotal > 0 ? (
+                <span className="inline-flex items-center gap-1 font-medium text-rose-600">
+                  <Clock className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
+                  Action needed
+                </span>
+              ) : (
+                'All caught up'
+              )
+            }
+          />
+          <StatCard
+            tone="mint"
+            icon={TrendingUp}
+            label="Completed this week"
+            value={completedThisWeek}
+            meta={
+              weekAppts.isSuccess ? (
+                <span className="font-medium text-teal-600">This week&apos;s schedule</span>
+              ) : (
+                'Loading week…'
+              )
+            }
+          />
+          <StatCard
+            tone="coral"
+            icon={Users}
+            label="Total patients"
+            value="—"
+            meta="Patient directory coming soon"
+          />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Today ({format(today, 'MMM d, yyyy')})</CardTitle>
-            <CardDescription>Filtered by scheduled start within today&apos;s window</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+          <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
+                  Today&apos;s <em className="not-italic text-teal-700">schedule</em>
+                </h2>
+                <p className="mt-1 text-xs text-[#64748b]">
+                  {totalToday} visits · {scheduleRange ?? 'No visits scheduled'}
+                </p>
+              </div>
+              <Link
+                to={ROUTES.practitioner.schedule}
+                className="inline-flex items-center gap-1 text-xs font-medium text-teal-800 hover:underline"
+              >
+                Full calendar
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+
             {todayAppts.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
-            {todayAppts.isError ? <p className="text-sm text-destructive">Could not load today&apos;s visits.</p> : null}
+            {todayAppts.isError ? (
+              <p className="text-sm text-destructive">Could not load today&apos;s visits.</p>
+            ) : null}
+
             {items.length ? (
-              <ul className="space-y-2">
+              <ul className="relative space-y-0 pl-1 before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-px before:bg-[#e2e8f0]">
                 {items.map((a: unknown, i: number) => {
-                  if (!isRecord(a)) return null;
-                  const st = a.scheduledStart ? new Date(String(a.scheduledStart)) : null;
-                  const patient = isRecord(a.patient) ? (a.patient as Record<string, unknown>) : null;
-                  const ptName = patient ? `${String(patient.firstName ?? '')} ${String(patient.lastName ?? '')}`.trim() : 'Patient';
+                  if (!isRecord(a) || !a.scheduledStart) return null;
+                  const st = new Date(String(a.scheduledStart));
+                  const id = String(a._id ?? i);
+                  const status = String(a.status ?? '');
+                  const terminal = TERMINAL.has(status);
+                  const isNext = !terminal && id === nextId;
+                  const tMs = st.getTime();
+                  const isPast = terminal || tMs < now.getTime();
+
+                  const reason =
+                    typeof a.reasonForVisit === 'string' && a.reasonForVisit.trim()
+                      ? a.reasonForVisit.trim()
+                      : 'Visit';
+
                   return (
-                    <li key={String(a._id ?? i)} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm dark:bg-zinc-950">
-                      <span className="font-medium">{ptName}</span>
-                      <span className="text-muted-foreground">
-                        {st ? format(st, 'h:mm a') : ''} · <span className="capitalize">{String(a.status ?? '').toLowerCase()}</span>
-                      </span>
+                    <li key={id} className="relative flex gap-4 pb-6 last:pb-0">
+                      <div
+                        className={cn(
+                          'relative z-[1] flex w-8 shrink-0 flex-col items-center pt-0.5',
+                          isNext && 'text-teal-600',
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'mt-1 h-2.5 w-2.5 rounded-full border-2 border-white shadow-sm',
+                            isPast && 'bg-slate-300',
+                            isNext && 'bg-teal-400 ring-4 ring-teal-100',
+                            !isPast && !isNext && 'bg-slate-200',
+                          )}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-xs font-medium text-[#64748b]">{format(st, 'HH:mm')}</p>
+                        <p className="mt-1 font-medium text-[#0a1628]">
+                          {patientName(a)} · <span className="font-normal text-[#64748b]">{reason}</span>
+                        </p>
+                      </div>
+                      <div className="shrink-0 pt-5">
+                        {status === 'COMPLETED' ? (
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                            Completed
+                          </span>
+                        ) : isNext ? (
+                          <span className="rounded-full bg-teal-100 px-2.5 py-1 text-[11px] font-medium text-teal-800">
+                            Next up · {formatDistanceToNow(st, { addSuffix: true })}
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-[#e2e8f0] bg-white px-2.5 py-1 text-[11px] font-medium capitalize text-[#64748b]">
+                            {status.toLowerCase().replace('_', ' ')}
+                          </span>
+                        )}
+                      </div>
                     </li>
                   );
                 })}
@@ -104,9 +327,183 @@ export default function PractitionerDashboardPage() {
             ) : todayAppts.isSuccess ? (
               <p className="text-sm text-muted-foreground">No appointments scheduled for today.</p>
             ) : null}
-          </CardContent>
-        </Card>
+          </section>
+
+          <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-start justify-between gap-2">
+              <div>
+                <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
+                  Pending <em className="not-italic text-teal-700">requests</em>
+                </h2>
+                <p className="mt-1 text-xs text-[#64748b]">New bookings awaiting confirmation</p>
+              </div>
+              <Link
+                to={ROUTES.practitioner.appointments}
+                className="text-xs font-medium text-teal-800 hover:underline"
+              >
+                View all
+              </Link>
+            </div>
+
+            {pending.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
+            {pending.isError ? <p className="text-sm text-destructive">Could not load requests.</p> : null}
+
+            {pendingItems.length ? (
+              <ul className="space-y-3">
+                {pendingItems.slice(0, 5).map((a: unknown, i: number) => {
+                  if (!isRecord(a) || !a._id) return null;
+                  const st = a.scheduledStart ? new Date(String(a.scheduledStart)) : null;
+                  const reason =
+                    typeof a.reasonForVisit === 'string' && a.reasonForVisit.trim()
+                      ? a.reasonForVisit.trim()
+                      : 'Consultation';
+                  const initials = patientName(a)
+                    .split(/\s+/)
+                    .map((w) => w[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase();
+                  return (
+                    <li
+                      key={String(a._id ?? i)}
+                      className="flex gap-3 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-200 to-violet-500 text-xs font-semibold text-white">
+                        {initials || 'P'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-[#0a1628]">{patientName(a)}</p>
+                        <p className="text-xs text-[#64748b]">
+                          {st ? `${format(st, 'MMM d')} · ${format(st, 'h:mm a')}` : 'Time TBC'} · {reason}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <span className="rounded-md bg-white px-2 py-0.5 text-[11px] text-[#64748b] shadow-sm">
+                            {reason.length > 32 ? `${reason.slice(0, 32)}…` : reason}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-1.5">
+                        <Button
+                          size="icon"
+                          className="h-9 w-9 rounded-lg bg-gradient-to-br from-teal-500 to-teal-700 text-white shadow-sm hover:from-teal-600 hover:to-teal-800"
+                          asChild
+                          title="Open to confirm"
+                        >
+                          <Link to={ROUTES.practitioner.appointment(String(a._id))}>
+                            <Check className="h-4 w-4" strokeWidth={2.5} />
+                          </Link>
+                        </Button>
+                        <Button size="icon" variant="outline" className="h-9 w-9 rounded-lg border-[#e2e8f0]" asChild>
+                          <Link to={ROUTES.practitioner.appointment(String(a._id))}>
+                            <X className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : pending.isSuccess ? (
+              <p className="text-sm text-muted-foreground">No pending requests.</p>
+            ) : null}
+          </section>
+        </div>
+
+        <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
+                This week&apos;s <em className="not-italic text-teal-700">visits</em>
+              </h2>
+              <p className="mt-1 text-xs text-[#64748b]">
+                {completedThisWeek} completed in the selected week window
+              </p>
+            </div>
+            <Link
+              to={ROUTES.practitioner.appointments}
+              className="inline-flex items-center gap-1 text-xs font-medium text-teal-800 hover:underline"
+            >
+              Reports
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="flex h-40 items-end justify-between gap-2 border-b border-[#e2e8f0] pb-2 pl-1 pr-1 pt-4">
+            {chartBuckets.map((col) => (
+              <div key={col.label} className="flex flex-1 flex-col items-center gap-2">
+                <div className="relative flex h-28 w-full max-w-[2.5rem] items-end justify-center">
+                  <div
+                    className={cn(
+                      'w-full min-h-[6px] rounded-t-md transition-all',
+                      col.isToday
+                        ? 'bg-gradient-to-t from-teal-600 to-teal-400'
+                        : 'bg-gradient-to-t from-sky-700 to-sky-400 opacity-80',
+                    )}
+                    style={{ height: `${Math.max(col.h, 8)}%` }}
+                  />
+                  <span className="absolute -top-5 text-[11px] font-medium text-[#0a1628]">{col.count || '—'}</span>
+                </div>
+                <span className={cn('text-[11px] font-medium', col.isToday ? 'text-teal-700' : 'text-[#64748b]')}>
+                  {col.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </>
+  );
+}
+
+function StatCard({
+  tone,
+  icon: Icon,
+  label,
+  value,
+  meta,
+}: {
+  tone: 'blue' | 'warm' | 'mint' | 'coral';
+  icon: typeof Calendar;
+  label: string;
+  value: number | string;
+  meta: ReactNode;
+}) {
+  const iconGrad =
+    tone === 'blue'
+      ? 'from-sky-400 to-sky-700 shadow-sky-500/25'
+      : tone === 'warm'
+        ? 'from-amber-300 to-amber-600 shadow-amber-500/25'
+        : tone === 'mint'
+          ? 'from-teal-300 to-teal-600 shadow-teal-500/25'
+          : 'from-rose-300 to-rose-500 shadow-rose-500/25';
+
+  const wash =
+    tone === 'blue'
+      ? 'before:bg-sky-500/10'
+      : tone === 'warm'
+        ? 'before:bg-amber-500/10'
+        : tone === 'mint'
+          ? 'before:bg-teal-500/10'
+          : 'before:bg-rose-500/10';
+
+  return (
+    <div
+      className={cn(
+        'relative overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white p-5 shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md',
+        'before:pointer-events-none before:absolute before:right-0 before:top-0 before:h-24 before:w-24 before:rounded-full',
+        wash,
+      )}
+    >
+      <div
+        className={cn(
+          'mb-3.5 grid h-9 w-9 place-items-center rounded-[10px] bg-gradient-to-br text-white',
+          iconGrad,
+        )}
+      >
+        <Icon className="h-4 w-4" strokeWidth={2} />
+      </div>
+      <p className="text-xs font-medium uppercase tracking-wide text-[#64748b]">{label}</p>
+      <p className="mt-1 font-display text-[32px] font-medium leading-none tracking-tight text-[#0a1628]">{value}</p>
+      <div className="mt-2 text-xs text-[#64748b]">{meta}</div>
+    </div>
   );
 }

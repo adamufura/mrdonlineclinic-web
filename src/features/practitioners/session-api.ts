@@ -8,6 +8,12 @@ export async function getPractitionerMe(): Promise<Record<string, unknown>> {
   return unwrapData(data, 'Failed to load practitioner profile');
 }
 
+/** PATCH /api/v1/practitioners/me — body matches backend `updatePractitionerProfileSchema`. */
+export async function patchPractitionerProfile(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const { data } = await api.patch<ApiEnvelope<Record<string, unknown>>>('/practitioners/me', body);
+  return unwrapData(data, 'Failed to update profile');
+}
+
 export type PractitionerAppointmentsQuery = {
   page?: number;
   limit?: number;

@@ -9,6 +9,10 @@ export type ListPractitionersParams = {
   limit?: number;
   specialtyId?: string;
   search?: string;
+  /** City, state, or country substring (matches practitioner practice location). */
+  location?: string;
+  /** YYYY-MM-DD — practitioners with at least one open slot that day (UTC). */
+  date?: string;
   sort?: DirectorySort;
 };
 
@@ -40,6 +44,7 @@ export type PractitionerDirectoryItem = {
   profilePhotoUrl?: string;
   consultationLanguages?: string[];
   specialties?: { _id: string; name: string; slug: string }[];
+  practiceLocation?: { city?: string; state?: string; country?: string };
 };
 
 /** GET /api/v1/practitioners/:id */

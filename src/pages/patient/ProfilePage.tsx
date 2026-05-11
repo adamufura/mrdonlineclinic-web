@@ -181,7 +181,10 @@ export default function PatientProfilePage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="middleName">Middle name</Label>
-                      <Input id="middleName" {...form.register('middleName')} />
+                      <Input id="middleName" autoComplete="additional-name" {...form.register('middleName')} />
+                      {form.formState.errors.middleName ? (
+                        <p className="text-sm text-destructive">{form.formState.errors.middleName.message}</p>
+                      ) : null}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Last name</Label>

@@ -2,10 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { useForm, useWatch } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { ArrowRight, Lock, Mail, Phone, UserRound } from 'lucide-react';
+import { ArrowRight, Loader2, Lock, Mail, Phone, UserRound } from 'lucide-react';
+import { AccountCreatingOverlay } from '@/components/auth/AccountCreatingOverlay';
 import { AuthDividerOr } from '@/components/auth/AuthDividerOr';
 import { AuthEyebrow } from '@/components/auth/AuthEyebrow';
 import { AuthSocialButtons } from '@/components/auth/AuthSocialButtons';
@@ -32,6 +33,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export default function PatientRegisterPage() {
+  const navigate = useNavigate();
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -49,8 +51,12 @@ export default function PatientRegisterPage() {
 
   const mutation = useMutation({
     mutationFn: registerPatient,
-    onSuccess: () => {
-      toast.success('Check your email to verify your account.');
+    onSuccess: (res, variables) => {
+      toast.success(res.message);
+      void navigate({
+        pathname: ROUTES.login,
+        search: `?email=${encodeURIComponent(variables.email)}`,
+      });
     },
     onError: (e) => {
       toast.error(normalizeAxiosError(e).message);
@@ -59,6 +65,7 @@ export default function PatientRegisterPage() {
 
   return (
     <>
+      <AccountCreatingOverlay open={mutation.isPending} />
       <Helmet>
         <title>Patient registration — MRD Online Clinic</title>
       </Helmet>
@@ -211,8 +218,17 @@ export default function PatientRegisterPage() {
           disabled={mutation.isPending}
           className="col-span-2 mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sky-500 to-sky-800 text-[15px] font-semibold text-white shadow-[0_8px_20px_rgba(14,165,233,0.28)] transition hover:brightness-[1.03] disabled:opacity-60"
         >
-          {mutation.isPending ? 'Creating account…' : 'Create my account'}
-          {!mutation.isPending ? <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden /> : null}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="size-5 shrink-0 animate-spin" strokeWidth={2.5} aria-hidden />
+              Creating account…
+            </>
+          ) : (
+            <>
+              Create my account
+              <ArrowRight className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
+            </>
+          )}
         </Button>
       </form>
 

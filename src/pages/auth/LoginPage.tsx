@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -35,11 +35,24 @@ function homeForRole(role: AuthRole): string {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
   const [remember, setRemember] = useState(true);
 
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '', password: '' } });
+  const setEmail = form.setValue;
+
+  useEffect(() => {
+    const raw = searchParams.get('email');
+    if (!raw) return;
+    const decoded = decodeURIComponent(raw.trim());
+    const parsed = schema.shape.email.safeParse(decoded);
+    if (!parsed.success) return;
+    setEmail('email', parsed.data);
+    const next = new URLSearchParams(searchParams);
+    next.delete('email');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, setEmail]);
 
   const mutation = useMutation({
     mutationFn: login,

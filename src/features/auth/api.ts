@@ -33,7 +33,6 @@ export async function logout(): Promise<void> {
 
 export type RegisterPatientBody = {
   firstName: string;
-  middleName?: string;
   lastName: string;
   email: string;
   phoneNumber: string;
