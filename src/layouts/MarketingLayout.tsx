@@ -95,9 +95,6 @@ export function MarketingLayout() {
       <Link className={navLinkClass} to={`${ROUTES.home}#pharmacy`}>
         Pharmacy
       </Link>
-      <Link className={navLinkClass} to={`${ROUTES.home}#pricing`}>
-        Pricing
-      </Link>
     </>
   );
 

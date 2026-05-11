@@ -9,14 +9,12 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  CircleCheck,
   ClipboardList,
   Droplets,
   Ear,
   Eye,
   FlaskConical,
   Heart,
-  Home,
   Minus,
   Pill,
   Plus,
@@ -69,51 +67,6 @@ const HOW_IT_WORKS_STEPS = [
     description:
       'When prescribing is appropriate, your clinician routes medications to trusted partner pharmacies you can use for pickup or delivery.',
     Icon: Pill,
-  },
-] as const;
-
-function formatNgn(amount: number): string {
-  return new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(amount);
-}
-
-const PRICING_PLANS = [
-  {
-    key: 'basic',
-    name: 'Basic',
-    priceMonthly: 9_900,
-    Icon: User,
-    features: ['Profile Creation', 'Appointment Booking', 'Notification Alerts', 'Limited Telemedicine Access'],
-    highlighted: false,
-  },
-  {
-    key: 'premium',
-    name: 'Premium',
-    priceMonthly: 25_000,
-    badge: 'Popular',
-    Icon: Home,
-    features: [
-      'Profile Creation',
-      'Appointment Booking',
-      'Notification Alerts',
-      'Extended Telemedicine Access',
-      'Exclusive Discounts',
-      'Appointment History',
-      'Priority Customer Support',
-    ],
-    highlighted: true,
-  },
-  {
-    key: 'enterprise',
-    name: 'Enterprise',
-    priceMonthly: 99_000,
-    Icon: Building2,
-    features: [
-      'All Basic plan features',
-      'All Premium plan features',
-      'Personalized Health Insights',
-      'Family Account Management',
-    ],
-    highlighted: false,
   },
 ] as const;
 
@@ -755,116 +708,6 @@ export default function LandingPage() {
                 })}
               </ul>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="pricing" className="scroll-mt-28 border-t border-brand-stroke-soft bg-white py-14 lg:py-20">
-        <div className="mx-auto w-full max-w-site px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="relative mx-auto inline-block text-3xl font-extrabold text-brand-navy lg:text-[2rem]">
-            Pricing Plan
-            <Plus className="absolute -right-6 top-1 size-[1rem] text-brand-cyan sm:-right-8 sm:size-5" strokeWidth={2.5} aria-hidden />
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-[0.9375rem] text-brand-body sm:text-base lg:mt-5">
-            Simple monthly tiers in Nigerian Naira (NGN). Upgrade anytime as your care needs grow.
-          </p>
-
-          <div className="mx-auto mt-12 grid max-w-6xl gap-8 lg:mt-14 lg:grid-cols-3 lg:gap-7 lg:items-stretch xl:gap-8">
-            {PRICING_PLANS.map((plan) => {
-              const { key, name, priceMonthly, Icon, features, highlighted } = plan;
-              const badge = 'badge' in plan ? plan.badge : undefined;
-              return (
-                <div
-                  key={key}
-                  className={cn(
-                    'flex flex-col rounded-2xl text-left shadow-hero-search-kit ring-1 transition-shadow lg:rounded-[1.35rem]',
-                    highlighted
-                      ? 'relative z-[1] border-0 bg-brand-hero-blue px-6 py-9 text-white shadow-float ring-brand-hero-blue/35 lg:-mt-1 lg:px-8 lg:py-11'
-                      : 'border border-brand-stroke-soft/80 bg-brand-landing/70 px-6 py-8 ring-brand-stroke-soft/60 lg:px-7 lg:py-10',
-                  )}
-                >
-                  <div className="flex items-start gap-4">
-                    <span
-                      className={cn(
-                        'flex size-14 shrink-0 items-center justify-center rounded-xl shadow-sm lg:size-[3.65rem]',
-                        highlighted ? 'bg-white/98 text-brand-hero-blue' : 'bg-white text-brand-hero-blue ring-1 ring-brand-stroke-soft/90',
-                      )}
-                    >
-                      <Icon className="size-[1.65rem] lg:size-7" strokeWidth={highlighted ? 2 : 1.85} aria-hidden />
-                    </span>
-                    <div className="min-w-0 flex-1 pt-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className={cn('text-xl font-bold lg:text-[1.35rem]', highlighted ? 'text-white' : 'text-brand-navy')}>
-                          {name}
-                        </h3>
-                        {badge ? (
-                          <span className="rounded-full bg-white/22 px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-white ring-1 ring-white/35">
-                            {badge}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="mt-5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                        <span
-                          className={cn(
-                            'text-[2rem] font-black tabular-nums leading-none tracking-tight sm:text-[2.25rem]',
-                            highlighted ? 'text-white' : 'text-brand-navy',
-                          )}
-                        >
-                          ₦{formatNgn(priceMonthly)}
-                        </span>
-                        <span
-                          className={cn(
-                            'text-[0.9rem] font-medium',
-                            highlighted ? 'text-sky-100/95' : 'text-brand-body',
-                          )}
-                        >
-                          /monthly
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-9 flex-1">
-                    <p className={cn('text-[0.9rem] font-bold', highlighted ? 'text-white' : 'text-brand-navy')}>What&apos;s included</p>
-                    <ul className="mt-4 space-y-3.5">
-                      {features.map((line) => (
-                        <li key={line} className="flex gap-3">
-                          <CircleCheck
-                            className={cn('mt-0.5 size-[1.1rem] shrink-0', highlighted ? 'text-white' : 'text-brand-hero-blue')}
-                            strokeWidth={2.15}
-                            aria-hidden
-                          />
-                          <span
-                            className={cn(
-                              'text-[0.875rem] leading-snug lg:text-[0.9375rem] lg:leading-relaxed',
-                              highlighted ? 'text-white/93' : 'text-brand-body',
-                            )}
-                          >
-                            {line}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="mt-10">
-                    <Button
-                      variant={highlighted ? 'secondary' : 'navCyan'}
-                      size="lg"
-                      className={cn(
-                        'w-full rounded-full px-8 text-[0.9rem] font-semibold lg:min-h-12 lg:text-[0.9375rem]',
-                        highlighted
-                          ? 'border-0 bg-white text-brand-navy shadow-md hover:bg-white/92'
-                          : 'border-0 bg-gradient-search-pill text-white shadow-sm hover:brightness-[1.04]',
-                      )}
-                      asChild
-                    >
-                      <Link to={ROUTES.register}>Choose Plan</Link>
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
       </section>
