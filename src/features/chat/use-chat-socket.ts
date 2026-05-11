@@ -1,10 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { getEnv } from '@/config/env';
 
 /**
  * Subscribes to `/chat` namespace for realtime messages in `roomId`.
- * Uses same-origin `/chat` + `/socket.io` so Vite can proxy in dev.
+ * In dev, connect to Vite origin (proxy forwards `/socket.io` to backend).
+ * In prod, connect to the configured API origin (same as backend host).
  */
 export function useChatSocket(
   roomId: string | undefined,
@@ -29,7 +31,8 @@ export function useChatSocket(
   useEffect(() => {
     if (!enabled || !roomId || !token) return;
 
-    const socket: Socket = io('/chat', {
+    const socketBase = getEnv().VITE_SOCKET_URL;
+    const socket: Socket = io(`${socketBase}/chat`, {
       path: '/socket.io',
       auth: { token },
       transports: ['websocket', 'polling'],
