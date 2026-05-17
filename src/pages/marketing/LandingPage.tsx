@@ -28,10 +28,10 @@ import {
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import avatar1Url from '@/assets/marketing/landing-avatar-1.png';
-import avatar2Url from '@/assets/marketing/landing-avatar-2.png';
-import avatar3Url from '@/assets/marketing/landing-avatar-3.png';
-import avatarCardUrl from '@/assets/marketing/landing-avatar-card.png';
+import avatar1Url from '@/assets/marketing/landing-avatar-1.jpg';
+import avatar2Url from '@/assets/marketing/landing-avatar-2.jpg';
+import avatar3Url from '@/assets/marketing/landing-avatar-3.jpg';
+import avatarCardUrl from '@/assets/marketing/landing-avatar-card.jpg';
 import faqPractitionerUrl from '@/assets/marketing/landing-faq-practitioner.jpg';
 import heroPractitionerUrl from '@/assets/marketing/landing-hero-practitioner.jpg';
 import howItWorksUrl from '@/assets/marketing/landing-how-it-works.jpg';
@@ -71,7 +71,7 @@ const HOW_IT_WORKS_STEPS = [
   },
 ] as const;
 
-const AVATAR_JD = avatarCardUrl;
+const AVATAR_CARD = avatarCardUrl;
 const AV_ROUND = [avatar1Url, avatar2Url, avatar3Url];
 
 const TESTIMONIALS = [
@@ -438,7 +438,7 @@ function HeroDoctorIllustration() {
             <div className="size-[min(240px,74vw)] shrink-0 overflow-hidden rounded-full ring-[4px] ring-white sm:size-[256px] md:size-[274px] lg:size-[292px] xl:size-[304px]">
               <img
                 src={DOCTOR_IMG}
-                alt="Nigerian physician in a white lab coat with a stethoscope."
+                alt="Nigerian Muslim female physician in a white coat and medical hijab."
                 className="h-full w-full object-cover object-[50%_6%]"
                 width={518}
                 height={640}
@@ -460,9 +460,13 @@ function HeroDoctorIllustration() {
 
         <div className="absolute right-[0%] top-[10%] z-20 rounded-[1.35rem] bg-white/95 px-3 py-2.5 shadow-float backdrop-blur-sm ring-1 ring-brand-stroke-soft/70 max-[389px]:right-0 max-[389px]:top-[12%] max-[389px]:scale-[0.92] sm:right-[-3%] sm:rounded-3xl sm:px-4 sm:py-3">
           <div className="flex items-center gap-3">
-            <img src={AVATAR_JD} alt="" className="size-10 shrink-0 rounded-full object-cover ring-2 ring-white sm:size-11" />
+            <img
+              src={AVATAR_CARD}
+              alt="Dr. Adamu Suleiman"
+              className="size-10 shrink-0 rounded-full object-cover ring-2 ring-white sm:size-11"
+            />
             <div className="min-w-0">
-              <p className="truncate text-xs font-bold text-brand-navy sm:text-sm">John Doe</p>
+              <p className="truncate text-xs font-bold text-brand-navy sm:text-sm">Adamu Suleiman</p>
               <p className="text-[11px] text-brand-body sm:text-xs">MBBS, Cardiologist</p>
               <Link to={ROUTES.findDoctor} className="text-[11px] font-semibold text-brand-cyan hover:underline sm:text-xs">
                 Book Now
@@ -478,8 +482,8 @@ function HeroDoctorIllustration() {
               <img
                 key={src}
                 src={src}
-                alt=""
-                className="-ml-2 size-8 rounded-full border-2 border-white object-cover first:ml-0 sm:size-10"
+                alt={`Verified doctor ${i + 1}`}
+                className="-ml-2 size-8 rounded-full border-2 border-white object-cover object-top first:ml-0 sm:size-10"
                 width={40}
                 height={40}
                 style={{ zIndex: 3 - i }}
