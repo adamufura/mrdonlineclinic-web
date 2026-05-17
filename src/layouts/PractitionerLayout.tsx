@@ -13,9 +13,8 @@ import {
   MoreHorizontal,
   Plus,
   Search,
-  Settings,
   ShieldCheck,
-  User,
+  UserCircle,
   Users,
   X,
 } from 'lucide-react';
@@ -23,6 +22,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import { BrandMark } from '@/components/brand/BrandMark';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { HeaderProfileMenu } from '@/components/shared/header-profile-menu';
+import { UserAvatar } from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { logout } from '@/features/auth/api';
@@ -95,7 +95,7 @@ function SidebarNav({
   pendingAppointments: number;
 }) {
   const user = useAuthStore((s) => s.user);
-  const publicProfileTo = user?.id ? ROUTES.findDoctorProfile(user.id) : ROUTES.practitioner.profile;
+  const publicProfileTo = user?.id ? ROUTES.findDoctorProfile(user.id) : ROUTES.findDoctor;
 
   return (
     <>
@@ -146,20 +146,25 @@ function SidebarNav({
             onNavigate={onNavigate}
           />
           <NavRow to={publicProfileTo} label="Reviews" icon={Award} onNavigate={onNavigate} dot />
+        </nav>
+      </div>
+
+      <div className="px-2 pb-2">
+        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">Account</p>
+        <nav className="flex flex-col gap-0.5">
+          <NavRow
+            to={ROUTES.practitioner.profile}
+            label="My account"
+            icon={UserCircle}
+            onNavigate={onNavigate}
+            end
+          />
           <NavRow
             to={ROUTES.practitioner.profileCredentials}
             label="Credentials"
             icon={ShieldCheck}
             onNavigate={onNavigate}
           />
-        </nav>
-      </div>
-
-      <div className="px-2 pb-2">
-        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">Profile</p>
-        <nav className="flex flex-col gap-0.5">
-          <NavRow to={publicProfileTo} label="Public profile" icon={User} onNavigate={onNavigate} />
-          <NavRow to={ROUTES.practitioner.profile} label="Settings" icon={Settings} onNavigate={onNavigate} />
         </nav>
       </div>
     </>
@@ -170,19 +175,24 @@ function SidebarChrome({
   displayName,
   subtitle,
   initial,
+  photoUrl,
   onRequestLogout,
 }: {
   displayName: string;
   subtitle: string;
   initial: string;
+  photoUrl?: string;
   onRequestLogout: () => void;
 }) {
   return (
     <div className="mt-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
       <div className="flex gap-2.5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-300 to-sky-400 font-display text-[13px] font-medium text-[#04132a]">
-          {initial}
-        </div>
+        <UserAvatar
+          name={displayName || initial}
+          photoUrl={photoUrl}
+          className="h-9 w-9"
+          fallbackClassName="h-9 w-9 bg-gradient-to-br from-teal-300 to-sky-400 text-[13px] text-[#04132a]"
+        />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -217,6 +227,7 @@ const sidebarShell =
 function PractitionerLayoutInner() {
   const { openSlotManager } = usePractitionerSlotManager();
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const clearSession = useAuthStore((s) => s.clearSession);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
@@ -249,6 +260,16 @@ function PractitionerLayoutInner() {
     ? `Dr. ${[user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email}`
     : 'Practitioner';
   const initial = (user?.firstName?.[0] ?? user?.email?.[0] ?? 'P').toUpperCase();
+  const profilePhotoUrl =
+    user?.profilePhotoUrl ||
+    (typeof profile.data?.profilePhotoUrl === 'string' ? profile.data.profilePhotoUrl : undefined);
+
+  useEffect(() => {
+    const url = profile.data?.profilePhotoUrl;
+    if (typeof url === 'string' && url && user && !user.profilePhotoUrl) {
+      setUser({ ...user, profilePhotoUrl: url });
+    }
+  }, [profile.data, user, setUser]);
 
   async function performLogout() {
     await logout();
@@ -287,6 +308,7 @@ function PractitionerLayoutInner() {
             displayName={displayName}
             subtitle={specialtyLabel}
             initial={initial}
+              photoUrl={profilePhotoUrl}
             onRequestLogout={() => setConfirmLogoutOpen(true)}
           />
         </div>
@@ -319,6 +341,7 @@ function PractitionerLayoutInner() {
                 displayName={displayName}
                 subtitle={specialtyLabel}
                 initial={initial}
+              photoUrl={profilePhotoUrl}
                 onRequestLogout={() => setConfirmLogoutOpen(true)}
               />
             </div>
@@ -381,6 +404,7 @@ function PractitionerLayoutInner() {
               displayName={displayName}
               email={user?.email}
               initial={initial}
+              photoUrl={profilePhotoUrl}
               accountHref={ROUTES.practitioner.profile}
               onLogout={() => setConfirmLogoutOpen(true)}
               avatarClassName="bg-gradient-to-br from-teal-300 to-sky-400 text-[#04132a]"
@@ -427,7 +451,7 @@ function PractitionerLayoutInner() {
                       {status === 'REJECTED' && notes ? `Admin note: ${notes}` : null}
                       {status === 'REJECTED' && !notes ? 'Please update your documents and resubmit.' : null}
                       {status !== 'PENDING_REVIEW' && status !== 'REJECTED'
-                        ? 'Submit your license under Profile → Credentials so administrators can verify your practice.'
+                        ? 'Submit your license under Account → Credentials so administrators can verify your practice.'
                         : null}
                       {profile.isLoading ? <span className="ml-1 text-xs opacity-80">Loading…</span> : null}
                     </p>

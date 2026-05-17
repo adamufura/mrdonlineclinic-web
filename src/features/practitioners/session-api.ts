@@ -14,6 +14,45 @@ export async function patchPractitionerProfile(body: Record<string, unknown>): P
   return unwrapData(data, 'Failed to update profile');
 }
 
+/** POST /api/v1/practitioners/me/photo — multipart field name `file`. */
+export async function uploadPractitionerPhoto(file: File): Promise<{ profilePhotoUrl: string }> {
+  const form = new FormData();
+  form.append('file', file, file.name || 'profile.jpg');
+  const { data } = await api.post<ApiEnvelope<{ profilePhotoUrl: string }>>('/practitioners/me/photo', form, {
+    transformRequest: [
+      (body, headers) => {
+        if (headers && typeof headers.delete === 'function') {
+          headers.delete('Content-Type');
+        }
+        return body;
+      },
+    ],
+  });
+  return unwrapData(data, 'Upload failed');
+}
+
+/** POST /api/v1/practitioners/me/credentials — license document (PDF or image). */
+export async function uploadPractitionerCredentials(file: File): Promise<{
+  licenseDocumentUrl: string;
+  verificationStatus: string;
+}> {
+  const form = new FormData();
+  form.append('file', file, file.name || 'license.pdf');
+  const { data } = await api.post<
+    ApiEnvelope<{ licenseDocumentUrl: string; verificationStatus: string }>
+  >('/practitioners/me/credentials', form, {
+    transformRequest: [
+      (body, headers) => {
+        if (headers && typeof headers.delete === 'function') {
+          headers.delete('Content-Type');
+        }
+        return body;
+      },
+    ],
+  });
+  return unwrapData(data, 'Upload failed');
+}
+
 export type PractitionerAppointmentsQuery = {
   page?: number;
   limit?: number;
