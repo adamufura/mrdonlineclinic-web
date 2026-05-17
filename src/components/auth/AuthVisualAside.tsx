@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { AuthHeroIllustration } from '@/components/auth/AuthHeroIllustration';
+import { BrandMark } from '@/components/brand/BrandMark';
 import { ROUTES } from '@/router/routes';
 import { cn } from '@/lib/utils/cn';
 
@@ -10,17 +11,6 @@ function asideMode(pathname: string): AsideMode {
   if (pathname === ROUTES.register || pathname === `${ROUTES.register}/`) return 'role';
   if (pathname.startsWith(ROUTES.registerPatient) || pathname.startsWith(ROUTES.registerPractitioner)) return 'signup';
   return 'default';
-}
-
-function BrandMark() {
-  return (
-    <div className="flex size-9 shrink-0 items-center justify-center rounded-[11px] bg-gradient-to-br from-teal-300 to-sky-400 shadow-[0_8px_24px_rgba(56,189,248,0.35)] ring-1 ring-white/25 sm:size-10">
-      <svg viewBox="0 0 24 24" className="size-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M9 12h6M12 9v6" strokeLinecap="round" />
-      </svg>
-    </div>
-  );
 }
 
 function TestimonialBlock() {
@@ -116,7 +106,7 @@ export function AuthVisualAside() {
       />
 
       <div className="relative z-10 flex items-center gap-2.5">
-        <BrandMark />
+        <BrandMark size="md" />
         <Link to={ROUTES.home} className="font-display text-[1.15rem] font-medium tracking-tight text-white sm:text-xl">
           MRD <span className="font-light text-white/70">Online Clinic</span>
         </Link>

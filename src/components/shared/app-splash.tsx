@@ -1,9 +1,9 @@
-import { Loader2 } from 'lucide-react';
+import { BrandMark } from '@/components/brand/BrandMark';
 
 export function AppSplash() {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-background text-muted-foreground">
-      <Loader2 className="size-8 animate-spin text-primary" aria-hidden />
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background text-muted-foreground">
+      <BrandMark size="lg" />
       <p className="text-sm">Loading…</p>
     </div>
   );

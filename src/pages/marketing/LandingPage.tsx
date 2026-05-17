@@ -28,20 +28,21 @@ import {
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
+import avatar1Url from '@/assets/marketing/landing-avatar-1.png';
+import avatar2Url from '@/assets/marketing/landing-avatar-2.png';
+import avatar3Url from '@/assets/marketing/landing-avatar-3.png';
+import avatarCardUrl from '@/assets/marketing/landing-avatar-card.png';
+import faqPractitionerUrl from '@/assets/marketing/landing-faq-practitioner.jpg';
+import heroPractitionerUrl from '@/assets/marketing/landing-hero-practitioner.jpg';
+import howItWorksUrl from '@/assets/marketing/landing-how-it-works.jpg';
 import { HeroSearchBar } from '@/components/marketing/HeroSearchBar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/router/routes';
 
-const DOCTOR_IMG =
-  'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=640&q=86';
-/** How it works — verified Unsplash asset (telehealth-friendly clinical portrait) */
-const HOW_IT_WORKS_IMG =
-  'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=900&q=85';
-
-/** Landing FAQ — doctor with clipboard/paperwork (friendly stock portrait). */
-const FAQ_PANEL_IMG =
-  'https://images.unsplash.com/photo-1645066928295-2506defde470?auto=format&fit=crop&w=960&q=85';
+const DOCTOR_IMG = heroPractitionerUrl;
+const HOW_IT_WORKS_IMG = howItWorksUrl;
+const FAQ_PANEL_IMG = faqPractitionerUrl;
 
 const HOW_IT_WORKS_STEPS = [
   {
@@ -70,12 +71,8 @@ const HOW_IT_WORKS_STEPS = [
   },
 ] as const;
 
-const AVATAR_JD = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80';
-const AV_ROUND = [
-  'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=96&q=72',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=96&q=72',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=96&q=72',
-];
+const AVATAR_JD = avatarCardUrl;
+const AV_ROUND = [avatar1Url, avatar2Url, avatar3Url];
 
 const TESTIMONIALS = [
   {
@@ -189,7 +186,7 @@ function LandingFaqSection() {
             <div className="relative z-[1] overflow-hidden rounded-2xl ring-1 ring-brand-stroke-soft/90 shadow-hero-search-kit">
               <img
                 src={FAQ_PANEL_IMG}
-                alt="Doctor in a white coat holding a clipboard with patient notes."
+                alt="Nigerian physician in a white coat reviewing notes on a clipboard."
                 width={960}
                 height={1200}
                 sizes="(min-width: 1024px) 46vw, 100vw"
@@ -441,7 +438,7 @@ function HeroDoctorIllustration() {
             <div className="size-[min(240px,74vw)] shrink-0 overflow-hidden rounded-full ring-[4px] ring-white sm:size-[256px] md:size-[274px] lg:size-[292px] xl:size-[304px]">
               <img
                 src={DOCTOR_IMG}
-                alt="Smiling physician in a white coat"
+                alt="Nigerian physician in a white lab coat with a stethoscope."
                 className="h-full w-full object-cover object-[50%_6%]"
                 width={518}
                 height={640}
@@ -650,7 +647,7 @@ export default function LandingPage() {
               >
                 <img
                   src={HOW_IT_WORKS_IMG}
-                  alt="Clinician in telehealth-friendly care setting."
+                  alt="Nigerian clinician in a modern clinic using a laptop for patient care."
                   width={900}
                   height={600}
                   sizes="(min-width: 1024px) 38vw, (min-width: 640px) 90vw, 100vw"

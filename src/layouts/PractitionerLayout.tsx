@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
+import { BrandMark } from '@/components/brand/BrandMark';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,14 +33,6 @@ import { useAuthStore } from '@/stores/auth-store';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
-}
-
-function BrandMark() {
-  return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-gradient-to-br from-teal-300 to-sky-400 shadow-[0_6px_18px_rgba(56,189,248,0.4)]">
-      <Plus className="h-4 w-4 text-white" strokeWidth={2.5} />
-    </div>
-  );
 }
 
 type NavIcon = typeof LayoutDashboard;

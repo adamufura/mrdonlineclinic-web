@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
 import { AuthFormTop } from '@/components/auth/AuthFormTop';
+import { BrandMark } from '@/components/brand/BrandMark';
 import { AuthVisualAside } from '@/components/auth/AuthVisualAside';
 import { ROUTES } from '@/router/routes';
 
@@ -8,7 +9,8 @@ export function AuthLayout() {
     <div className="grid min-h-dvh grid-cols-1 font-sans text-brand-navy md:grid-cols-[1.05fr_1fr]">
       {/* Mobile — match visual pane tone */}
       <div className="flex items-center justify-between border-b border-white/10 bg-auth-visual px-4 py-3.5 md:hidden">
-        <Link to={ROUTES.home} className="font-display text-[0.95rem] font-medium tracking-tight text-white">
+        <Link to={ROUTES.home} className="flex items-center gap-2 font-display text-[0.95rem] font-medium tracking-tight text-white">
+          <BrandMark size="sm" />
           MRD <span className="font-light text-white/70">Online Clinic</span>
         </Link>
         <Link to={ROUTES.home} className="text-xs font-semibold text-white/85 underline-offset-2 hover:underline">

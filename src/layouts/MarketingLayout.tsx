@@ -2,6 +2,7 @@ import { type FormEvent, useState } from 'react';
 import { Lock, Mail, MapPin, Phone, User } from 'lucide-react';
 import { Link, Outlet } from 'react-router-dom';
 import { toast } from 'sonner';
+import { BrandMark } from '@/components/brand/BrandMark';
 import { MarketingFooterSocial } from '@/components/marketing/MarketingFooterSocial';
 import { MarketingLocationMap } from '@/components/marketing/MarketingLocationMap';
 import { Button } from '@/components/ui/button';
@@ -51,29 +52,15 @@ function Logo() {
   return (
     <Link
       to={ROUTES.home}
-      className="group flex max-w-[min(100%,220px)] items-center gap-1 sm:max-w-none sm:gap-1.5"
+      className="group flex max-w-[min(100%,280px)] items-center gap-2.5 sm:max-w-none sm:gap-3"
       aria-label="MRD Online Clinic — home"
     >
+      <BrandMark size="xl" variant="transparent" />
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-0.5 leading-none">
         <span className="text-lg font-bold tracking-tight text-brand-hero-blue sm:text-xl">MRD</span>
         <span className="text-lg font-bold tracking-tight text-brand-navy sm:text-xl">Online</span>
         <span className="text-lg font-bold tracking-tight text-brand-navy sm:text-xl">Clinic</span>
       </div>
-      <svg
-        aria-hidden
-        className="h-8 w-[22px] shrink-0 text-brand-hero-blue sm:h-9 sm:w-6"
-        viewBox="0 0 28 36"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M8 6c0-4 5-7 11-7v30c0 6-11 12-17 13"
-          stroke="currentColor"
-          strokeWidth="2.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
     </Link>
   );
 }
