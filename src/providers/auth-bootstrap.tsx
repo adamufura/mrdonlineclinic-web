@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
+import { ensureAccessToken } from '@/lib/api/client';
 import { fetchMe } from '@/features/auth/api';
 import { useAuthStore } from '@/stores/auth-store';
 
 /**
- * Hydrates the auth store from GET /auth/me (with refresh cookie + interceptor on 401).
- * Must render inside {@link RouterProvider} when navigation is needed; safe without for session-only bootstrap.
+ * Hydrates session: refresh cookie → access token, then GET /auth/me.
+ * Refresh token stays in httpOnly cookie; access token in memory + sessionStorage.
  */
 export function AuthBootstrap() {
   const setBootstrapStatus = useAuthStore((s) => s.setBootstrapStatus);
@@ -16,6 +17,14 @@ export function AuthBootstrap() {
     setBootstrapStatus('loading');
     void (async () => {
       try {
+        const token = await ensureAccessToken();
+        if (!token) {
+          if (!cancelled) {
+            clearSession();
+            setBootstrapStatus('ready');
+          }
+          return;
+        }
         const user = await fetchMe();
         if (!cancelled) {
           setUser(user);

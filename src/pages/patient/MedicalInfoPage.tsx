@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ClipboardList, HeartPulse, Loader2, MapPin, Phone } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, type ReactNode } from 'react';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -10,15 +11,164 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { getPatientMe, patchPatientMedical } from '@/features/patients/api';
+import {
+  getPatientMe,
+  patchPatientAddress,
+  patchPatientEmergency,
+  patchPatientHealthRecord,
+} from '@/features/patients/api';
 import { normalizeAxiosError } from '@/lib/api/errors';
 import {
-  medicalFormToPatch,
-  patientDocToMedicalForm,
-  patientMedicalFormSchema,
-  type PatientMedicalFormValues,
+  addressFormSchema,
+  addressFormToPatch,
+  emergencyContactFormSchema,
+  emergencyFormToPatch,
+  healthRecordFormSchema,
+  healthRecordFormToPatch,
+  patientDocToAddressForm,
+  patientDocToEmergencyForm,
+  patientDocToHealthRecordForm,
+  type AddressFormValues,
+  type EmergencyContactFormValues,
+  type HealthRecordFormValues,
 } from '@/lib/validators/patient';
 import { ROUTES } from '@/router/routes';
+import { cn } from '@/lib/utils/cn';
+
+function SectionCard({
+  icon,
+  title,
+  description,
+  children,
+  footer,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  children: ReactNode;
+  footer: ReactNode;
+}) {
+  return (
+    <Card className="overflow-hidden border-border/80 shadow-sm">
+      <CardHeader className="border-b bg-muted/25 pb-5">
+        <div className="flex gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            {icon}
+          </div>
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="text-lg">{title}</CardTitle>
+            <CardDescription className="text-sm leading-relaxed">{description}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5 pt-6">{children}</CardContent>
+      <div className="flex flex-col gap-2 border-t bg-muted/15 px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
+        {footer}
+      </div>
+    </Card>
+  );
+}
+
+function ListField({
+  form,
+  name,
+  id,
+  label,
+  placeholder,
+  hint,
+}: {
+  form: UseFormReturn<HealthRecordFormValues>;
+  name: keyof HealthRecordFormValues;
+  id: string;
+  label: string;
+  placeholder: string;
+  hint: string;
+}) {
+  const value = form.watch(name) ?? '';
+  const lineCount = value.split(/\r?\n/).filter((l) => l.trim()).length;
+  const hasContent = lineCount > 0;
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm ring-1 ring-black/[0.03] transition-shadow focus-within:shadow-md focus-within:ring-primary/25">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/80 bg-secondary/60 px-4 py-2.5">
+        <Label htmlFor={id} className="text-sm font-semibold text-foreground">
+          {label}
+        </Label>
+        {hasContent ? (
+          <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-foreground">
+            {lineCount} {lineCount === 1 ? 'entry' : 'entries'}
+          </span>
+        ) : (
+          <span className="text-xs font-medium text-muted-foreground">{hint}</span>
+        )}
+      </div>
+      <div className="space-y-2 p-4">
+        <Textarea
+          id={id}
+          rows={4}
+          placeholder={placeholder}
+          className={cn(
+            'min-h-[108px] resize-y rounded-lg border px-3.5 py-3 text-[15px] leading-7 shadow-none',
+            'text-foreground placeholder:text-muted-foreground/55',
+            'transition-[border-color,background-color,box-shadow]',
+            hasContent
+              ? 'border-primary/25 bg-white focus-visible:border-primary/50'
+              : 'border-input bg-muted/35 focus-visible:border-primary/45 focus-visible:bg-white',
+            'focus-visible:ring-2 focus-visible:ring-primary/20',
+          )}
+          {...form.register(name)}
+        />
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {hasContent ? 'One item per line — add or edit anytime.' : `Type each ${label.toLowerCase()} on its own line.`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FieldRow({
+  label,
+  htmlFor,
+  children,
+  className,
+}: {
+  label: string;
+  htmlFor: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('space-y-2', className)}>
+      <Label htmlFor={htmlFor} className="text-sm font-medium">
+        {label}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+function SaveButton({
+  label,
+  pending,
+  disabled,
+}: {
+  label: string;
+  pending: boolean;
+  disabled: boolean;
+}) {
+  return (
+    <Button type="submit" disabled={disabled || pending} className="min-w-[10rem]">
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Saving…
+        </>
+      ) : (
+        label
+      )}
+    </Button>
+  );
+}
 
 export default function PatientMedicalInfoPage() {
   const qc = useQueryClient();
@@ -28,15 +178,19 @@ export default function PatientMedicalInfoPage() {
     queryFn: getPatientMe,
   });
 
-  const form = useForm<PatientMedicalFormValues>({
-    resolver: zodResolver(patientMedicalFormSchema),
+  const healthForm = useForm<HealthRecordFormValues>({
+    resolver: zodResolver(healthRecordFormSchema),
+    defaultValues: { allergiesText: '', chronicConditionsText: '', currentMedicationsText: '' },
+  });
+
+  const emergencyForm = useForm<EmergencyContactFormValues>({
+    resolver: zodResolver(emergencyContactFormSchema),
+    defaultValues: { emergencyName: '', emergencyRelationship: '', emergencyPhone: '' },
+  });
+
+  const addressForm = useForm<AddressFormValues>({
+    resolver: zodResolver(addressFormSchema),
     defaultValues: {
-      allergiesText: '',
-      chronicConditionsText: '',
-      currentMedicationsText: '',
-      emergencyName: '',
-      emergencyRelationship: '',
-      emergencyPhone: '',
       addressStreet: '',
       addressCity: '',
       addressState: '',
@@ -46,122 +200,205 @@ export default function PatientMedicalInfoPage() {
   });
 
   useEffect(() => {
-    if (profile.data) {
-      form.reset(patientDocToMedicalForm(profile.data));
-    }
-  }, [profile.data, form]);
+    if (!profile.data) return;
+    healthForm.reset(patientDocToHealthRecordForm(profile.data));
+    emergencyForm.reset(patientDocToEmergencyForm(profile.data));
+    addressForm.reset(patientDocToAddressForm(profile.data));
+  }, [profile.data, healthForm, emergencyForm, addressForm]);
 
-  const save = useMutation({
-    mutationFn: (values: PatientMedicalFormValues) => patchPatientMedical(medicalFormToPatch(values)),
+  const invalidate = async () => {
+    await qc.invalidateQueries({ queryKey: ['patients', 'me'] });
+  };
+
+  const saveHealth = useMutation({
+    mutationFn: (values: HealthRecordFormValues) => patchPatientHealthRecord(healthRecordFormToPatch(values)),
     onSuccess: async () => {
-      toast.success('Medical information saved');
-      await qc.invalidateQueries({ queryKey: ['patients', 'me'] });
+      toast.success('Health record saved');
+      await invalidate();
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
   });
 
+  const saveEmergency = useMutation({
+    mutationFn: (values: EmergencyContactFormValues) => patchPatientEmergency(emergencyFormToPatch(values)),
+    onSuccess: async () => {
+      toast.success('Emergency contact saved');
+      await invalidate();
+    },
+    onError: (e) => toast.error(normalizeAxiosError(e).message),
+  });
+
+  const saveAddress = useMutation({
+    mutationFn: (values: AddressFormValues) => patchPatientAddress(addressFormToPatch(values)),
+    onSuccess: async () => {
+      toast.success('Address saved');
+      await invalidate();
+    },
+    onError: (e) => toast.error(normalizeAxiosError(e).message),
+  });
+
+  const loading = profile.isLoading;
+
   return (
     <>
       <Helmet>
-        <title>Medical info — MRD Online Clinic</title>
+        <title>Health profile — MRD Online Clinic</title>
         <meta name="robots" content="noindex" />
       </Helmet>
-      <div className="mx-auto max-w-2xl space-y-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mx-auto max-w-4xl space-y-8 pb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Medical information</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Saved with <code className="rounded bg-muted px-1">PATCH /api/v1/patients/me/medical</code>. List fields are one
-              entry per line. Clearing a list saves an empty array.
+            <p className="text-xs font-medium uppercase tracking-wide text-primary">Care</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Health profile</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Keep your allergies, medications, emergency contact, and home address up to date. Each section saves
+              independently so you can update one part at a time.
             </p>
           </div>
-          <Button asChild variant="outline" size="sm">
-            <Link to={ROUTES.patient.profile}>Back to profile</Link>
+          <Button asChild variant="outline" size="sm" className="shrink-0">
+            <Link to={ROUTES.patient.profile}>My account</Link>
           </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Health record</CardTitle>
-            <CardDescription>Allergies, conditions, medications, emergency contact, and address.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {profile.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
-            {profile.isError ? <p className="text-sm text-destructive">Could not load profile.</p> : null}
+        {profile.isError ? (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            Could not load your profile. Refresh the page or try again later.
+          </p>
+        ) : null}
 
-            <form
-              className="mt-4 space-y-6"
-              onSubmit={form.handleSubmit((v) => {
-                save.mutate(v);
-              })}
-            >
-              <div className="space-y-2">
-                <Label htmlFor="allergies">Allergies (one per line)</Label>
-                <Textarea id="allergies" rows={4} {...form.register('allergiesText')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="chronic">Chronic conditions (one per line)</Label>
-                <Textarea id="chronic" rows={4} {...form.register('chronicConditionsText')} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="meds">Current medications (one per line)</Label>
-                <Textarea id="meds" rows={4} {...form.register('currentMedicationsText')} />
-              </div>
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading your health profile…</p>
+        ) : null}
 
-              <div className="rounded-lg border border-border p-4">
-                <h3 className="text-sm font-semibold">Emergency contact</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Leave all three empty to skip updating this block.</p>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="en">Name</Label>
-                    <Input id="en" {...form.register('emergencyName')} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="er">Relationship</Label>
-                    <Input id="er" {...form.register('emergencyRelationship')} />
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="ep">Phone</Label>
-                    <Input id="ep" type="tel" {...form.register('emergencyPhone')} />
-                  </div>
-                </div>
-                {form.formState.errors.emergencyName ? (
-                  <p className="mt-2 text-sm text-destructive">{form.formState.errors.emergencyName.message}</p>
-                ) : null}
-              </div>
+        <form
+          className={cn(loading && 'pointer-events-none opacity-60')}
+          onSubmit={healthForm.handleSubmit((v) => saveHealth.mutate(v))}
+        >
+          <SectionCard
+            icon={<HeartPulse className="h-5 w-5" aria-hidden />}
+            title="Health record"
+            description="List allergies, chronic conditions, and medications your care team should know about. Enter one item per line."
+            footer={
+              <SaveButton
+                label="Save health record"
+                pending={saveHealth.isPending}
+                disabled={!healthForm.formState.isDirty}
+              />
+            }
+          >
+            <ListField
+              form={healthForm}
+              id="allergies"
+              name="allergiesText"
+              label="Allergies"
+              hint="One per line"
+              placeholder={'e.g. Penicillin\nPeanuts'}
+            />
+            <ListField
+              form={healthForm}
+              id="chronic"
+              name="chronicConditionsText"
+              label="Chronic conditions"
+              hint="One per line"
+              placeholder={'e.g. Type 2 diabetes\nHypertension'}
+            />
+            <ListField
+              form={healthForm}
+              id="meds"
+              name="currentMedicationsText"
+              label="Current medications"
+              hint="One per line"
+              placeholder={'e.g. Metformin 500mg — twice daily\nLisinopril 10mg — once daily'}
+            />
+          </SectionCard>
+        </form>
 
-              <div className="rounded-lg border border-border p-4">
-                <h3 className="text-sm font-semibold">Address</h3>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="st">Street</Label>
-                    <Input id="st" {...form.register('addressStreet')} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input id="city" {...form.register('addressCity')} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State / region</Label>
-                    <Input id="state" {...form.register('addressState')} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input id="country" {...form.register('addressCountry')} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="zip">Postal code</Label>
-                    <Input id="zip" {...form.register('addressPostalCode')} />
-                  </div>
-                </div>
-              </div>
+        <form
+          className={cn(loading && 'pointer-events-none opacity-60')}
+          onSubmit={emergencyForm.handleSubmit((v) => saveEmergency.mutate(v))}
+        >
+          <SectionCard
+            icon={<Phone className="h-5 w-5" aria-hidden />}
+            title="Emergency contact"
+            description="Someone we can reach if you need urgent help during a visit. All three fields are required when saving a contact."
+            footer={
+              <>
+                <p className="text-xs text-muted-foreground sm:mr-auto sm:text-left">
+                  Clear all fields and save to remove your emergency contact.
+                </p>
+                <SaveButton
+                  label="Save emergency contact"
+                  pending={saveEmergency.isPending}
+                  disabled={!emergencyForm.formState.isDirty}
+                />
+              </>
+            }
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FieldRow label="Full name" htmlFor="en">
+                <Input id="en" autoComplete="name" placeholder="e.g. Fatima Suleiman" {...emergencyForm.register('emergencyName')} />
+              </FieldRow>
+              <FieldRow label="Relationship" htmlFor="er">
+                <Input id="er" placeholder="e.g. Spouse, Parent, Sibling" {...emergencyForm.register('emergencyRelationship')} />
+              </FieldRow>
+              <FieldRow label="Phone number" htmlFor="ep" className="sm:col-span-2">
+                <Input id="ep" type="tel" autoComplete="tel" placeholder="+234 …" {...emergencyForm.register('emergencyPhone')} />
+              </FieldRow>
+            </div>
+            {emergencyForm.formState.errors.emergencyName ? (
+              <p className="text-sm text-destructive">{emergencyForm.formState.errors.emergencyName.message}</p>
+            ) : null}
+          </SectionCard>
+        </form>
 
-              <Button type="submit" disabled={save.isPending || !form.formState.isDirty}>
-                {save.isPending ? 'Saving…' : 'Save medical information'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        <form
+          className={cn(loading && 'pointer-events-none opacity-60')}
+          onSubmit={addressForm.handleSubmit((v) => saveAddress.mutate(v))}
+        >
+          <SectionCard
+            icon={<MapPin className="h-5 w-5" aria-hidden />}
+            title="Home address"
+            description="Used for records and any home-visit logistics. Fill in what you are comfortable sharing."
+            footer={
+              <>
+                <p className="text-xs text-muted-foreground sm:mr-auto sm:text-left">
+                  Clear all fields and save to remove your saved address.
+                </p>
+                <SaveButton label="Save address" pending={saveAddress.isPending} disabled={!addressForm.formState.isDirty} />
+              </>
+            }
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FieldRow label="Street address" htmlFor="st" className="sm:col-span-2">
+                <Input id="st" autoComplete="street-address" placeholder="House number and street" {...addressForm.register('addressStreet')} />
+              </FieldRow>
+              <FieldRow label="City" htmlFor="city">
+                <Input id="city" autoComplete="address-level2" {...addressForm.register('addressCity')} />
+              </FieldRow>
+              <FieldRow label="State / region" htmlFor="state">
+                <Input id="state" autoComplete="address-level1" {...addressForm.register('addressState')} />
+              </FieldRow>
+              <FieldRow label="Country" htmlFor="country">
+                <Input id="country" autoComplete="country-name" {...addressForm.register('addressCountry')} />
+              </FieldRow>
+              <FieldRow label="Postal code" htmlFor="zip">
+                <Input id="zip" autoComplete="postal-code" {...addressForm.register('addressPostalCode')} />
+              </FieldRow>
+            </div>
+          </SectionCard>
+        </form>
+
+        <div className="flex items-start gap-3 rounded-xl border border-dashed border-border/80 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+          <ClipboardList className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <p>
+            Your care team sees this information during appointments and messaging. For name, photo, and login details,
+            use{' '}
+            <Link to={ROUTES.patient.profile} className="font-medium text-primary underline-offset-4 hover:underline">
+              My account
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </>
   );

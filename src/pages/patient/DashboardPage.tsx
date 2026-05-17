@@ -248,7 +248,7 @@ export default function PatientDashboardPage() {
               className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-800 hover:underline"
             >
               <Shield className="h-3.5 w-3.5" />
-              Log vitals in health profile
+              Update health profile
             </Link>
           </div>
         </div>
@@ -401,7 +401,7 @@ export default function PatientDashboardPage() {
             <p className="font-display text-lg text-[#0a1628]">No upcoming visits</p>
             <p className="mt-2 text-sm text-muted-foreground">When you book, your next visit will appear here.</p>
             <Button asChild className="mt-6" size="lg">
-              <Link to={ROUTES.findDoctor}>Find a doctor</Link>
+              <Link to={ROUTES.patient.findDoctor}>Find a doctor</Link>
             </Button>
           </section>
         ) : null}

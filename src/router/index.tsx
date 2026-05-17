@@ -171,6 +171,14 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import('@/pages/patient/PrescriptionsPage')).default }),
           },
           {
+            path: 'find-doctor',
+            lazy: async () => ({ Component: (await import('@/pages/patient/FindDoctorPage')).default }),
+          },
+          {
+            path: 'find-doctor/:practitionerId',
+            lazy: async () => ({ Component: (await import('@/pages/patient/PractitionerProfilePage')).default }),
+          },
+          {
             path: 'profile',
             lazy: async () => ({ Component: (await import('@/pages/patient/ProfilePage')).default }),
           },

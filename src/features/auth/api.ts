@@ -1,4 +1,4 @@
-import { api } from '@/lib/api/client';
+import { api, ensureAccessToken } from '@/lib/api/client';
 import type { ApiEnvelope, AuthUser, TokenPair } from '@/types/api';
 
 function unwrap<T>(data: ApiEnvelope<T>, fallbackMsg: string): T {
@@ -66,10 +66,16 @@ export async function resetPassword(token: string, password: string): Promise<{ 
   return unwrap(data, 'Reset failed');
 }
 
-export async function changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
-  const { data } = await api.post<ApiEnvelope<{ message: string }>>('/auth/change-password', {
-    currentPassword,
-    newPassword,
-  });
-  return unwrap(data, 'Password change failed');
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ message: string; tokens: TokenPair }> {
+  await ensureAccessToken();
+  const { data } = await api.post<ApiEnvelope<{ tokens: TokenPair }>>(
+    '/auth/change-password',
+    { currentPassword, newPassword },
+    { _skipAuthRefresh: true },
+  );
+  const payload = unwrap(data, 'Password change failed');
+  return { message: data.message ?? 'Password changed successfully', tokens: payload.tokens };
 }

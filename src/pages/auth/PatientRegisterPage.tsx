@@ -13,10 +13,11 @@ import { AuthSocialButtons } from '@/components/auth/AuthSocialButtons';
 import { PasswordMeter } from '@/components/auth/PasswordMeter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { registerPatient } from '@/features/auth/api';
 import { normalizeAxiosError } from '@/lib/api/errors';
-import { strongPasswordSchema } from '@/lib/validators/auth';
+import { passwordSchema } from '@/lib/validators/auth';
 import { ROUTES } from '@/router/routes';
 const schema = z
   .object({
@@ -24,7 +25,7 @@ const schema = z
     lastName: z.string().min(1, 'Required'),
     email: z.string().email(),
     phoneNumber: z.string().min(5, 'Enter a valid phone number'),
-    password: strongPasswordSchema,
+    password: passwordSchema,
     confirmPassword: z.string(),
     acceptTerms: z.boolean().refine((v) => v === true, { message: 'You must accept the terms' }),
   })
@@ -160,16 +161,15 @@ export default function PatientRegisterPage() {
           <Label htmlFor="password" className="text-[12px] font-medium text-slate-700">
             Password
           </Label>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              className="rounded-xl border-slate-200 pl-12 focus-visible:border-sky-500 focus-visible:ring-sky-500/20"
-              {...form.register('password')}
-            />
-          </div>
+          <PasswordInput
+            id="password"
+            leftIcon={<Lock strokeWidth={2} />}
+            autoComplete="new-password"
+            maxLength={12}
+            placeholder="••••••"
+            className="rounded-xl border-slate-200 focus-visible:border-sky-500 focus-visible:ring-sky-500/20"
+            {...form.register('password')}
+          />
           <PasswordMeter password={pwd ?? ''} />
           {form.formState.errors.password ? (
             <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
@@ -180,16 +180,15 @@ export default function PatientRegisterPage() {
           <Label htmlFor="confirmPassword" className="text-[12px] font-medium text-slate-700">
             Confirm password
           </Label>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="••••••••"
-              className="rounded-xl border-slate-200 pl-12 focus-visible:border-sky-500 focus-visible:ring-sky-500/20"
-              {...form.register('confirmPassword')}
-            />
-          </div>
+          <PasswordInput
+            id="confirmPassword"
+            leftIcon={<Lock strokeWidth={2} />}
+            autoComplete="new-password"
+            maxLength={12}
+            placeholder="••••••"
+            className="rounded-xl border-slate-200 focus-visible:border-sky-500 focus-visible:ring-sky-500/20"
+            {...form.register('confirmPassword')}
+          />
           {form.formState.errors.confirmPassword ? (
             <p className="text-sm text-destructive">{form.formState.errors.confirmPassword.message}</p>
           ) : null}

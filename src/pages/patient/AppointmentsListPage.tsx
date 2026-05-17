@@ -179,7 +179,7 @@ export default function PatientAppointmentsListPage() {
               <p className="font-medium text-[#0a1628]">No appointments in this view</p>
               <p className="mt-2 text-sm text-[#64748b]">Try another filter or book a visit from Find a doctor.</p>
               <Button asChild className="mt-6" variant="outline">
-                <Link to={ROUTES.findDoctor}>Find a doctor</Link>
+                <Link to={ROUTES.patient.findDoctor}>Find a doctor</Link>
               </Button>
             </div>
           ) : null}

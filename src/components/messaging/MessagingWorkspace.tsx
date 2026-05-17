@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { profilePhotoFrom, UserAvatar } from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getChatRoom, listChatMessages, listChatRooms, markChatRoomReadAll as markRoomReadApi, postChatMessage } from '@/features/chat/api';
@@ -279,9 +280,12 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                           active && 'bg-gradient-to-r from-sky-50/90 to-transparent ring-1 ring-inset ring-sky-100',
                         )}
                       >
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-200 to-sky-500 font-display text-sm font-semibold text-white shadow-sm">
-                          {displayName(o).charAt(0).toUpperCase()}
-                        </div>
+                        <UserAvatar
+                          name={displayName(o)}
+                          photoUrl={profilePhotoFrom(o)}
+                          className="h-11 w-11 shadow-sm"
+                          fallbackClassName="h-11 w-11 bg-gradient-to-br from-sky-200 to-sky-500 text-sm font-semibold text-white"
+                        />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-2">
                             <span className="truncate font-semibold text-[#0a1628]">{displayName(o)}</span>
@@ -346,9 +350,12 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                   <Button type="button" variant="ghost" size="icon" className="shrink-0 md:hidden" onClick={closeRoom} aria-label="Back">
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-200 to-sky-500 font-display text-sm font-semibold text-white shadow-sm">
-                    {displayName(other).charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar
+                    name={displayName(other)}
+                    photoUrl={profilePhotoFrom(other)}
+                    className="h-10 w-10 shadow-sm"
+                    fallbackClassName="h-10 w-10 bg-gradient-to-br from-teal-200 to-sky-500 text-sm font-semibold text-white"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-[#0a1628]">{displayName(other)}</p>
                     <p className="text-xs text-[#64748b]">
@@ -459,9 +466,12 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
             {roomId && appointment ? (
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
                 <div className="flex flex-col items-center text-center">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 to-teal-100 font-display text-2xl font-semibold text-sky-800">
-                    {displayName(other).charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar
+                    name={displayName(other)}
+                    photoUrl={profilePhotoFrom(other)}
+                    className="h-20 w-20"
+                    fallbackClassName="h-20 w-20 bg-gradient-to-br from-sky-100 to-teal-100 text-2xl font-semibold text-sky-800"
+                  />
                   <p className="mt-3 font-semibold text-[#0a1628]">{displayName(other)}</p>
                   <p className="text-xs text-[#64748b]">Care team</p>
                 </div>

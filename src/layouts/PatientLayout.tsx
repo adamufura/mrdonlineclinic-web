@@ -1,9 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Activity,
   Bell,
   Calendar,
   FileText,
+  HeartPulse,
   HelpCircle,
   LayoutDashboard,
   Menu,
@@ -11,17 +12,19 @@ import {
   MoreHorizontal,
   Plus,
   Search,
-  Settings,
   Stethoscope,
-  User,
+  UserCircle,
   X,
 } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { BrandMark } from '@/components/brand/BrandMark';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { HeaderProfileMenu } from '@/components/shared/header-profile-menu';
+import { UserAvatar } from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { logout } from '@/features/auth/api';
+import { getPatientMe } from '@/features/patients/api';
 import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/router/routes';
 import { useAuthStore } from '@/stores/auth-store';
@@ -31,14 +34,18 @@ const workspaceNav = [
   { to: ROUTES.patient.appointments, label: 'Appointments', icon: Calendar },
   { to: ROUTES.patient.messages, label: 'Messages', icon: MessageSquare },
   { to: ROUTES.patient.prescriptions, label: 'Prescriptions', icon: FileText },
-  { to: ROUTES.findDoctor, label: 'Find a doctor', icon: Stethoscope },
+  { to: ROUTES.patient.findDoctor, label: 'Find a doctor', icon: Stethoscope },
 ] as const;
 
-const careNav = [
-  { to: ROUTES.patient.profile, label: 'Health profile', icon: User },
-  { to: ROUTES.patient.profileMedical, label: 'Vitals & trends', icon: Activity },
-  { to: ROUTES.patient.profile, label: 'Settings', icon: Settings },
-] as const;
+const careNav: {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  end?: boolean;
+}[] = [
+  { to: ROUTES.patient.profileMedical, label: 'Health profile', icon: HeartPulse },
+  { to: ROUTES.patient.profile, label: 'My account', icon: UserCircle, end: true },
+];
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -78,8 +85,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       <div className="px-2 pb-2">
         <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">Care</p>
         <nav className="flex flex-col gap-0.5">
-          {careNav.map(({ to, label, icon: Icon }) => (
-            <NavLink key={`${to}-${label}`} to={to} className={linkClass} onClick={onNavigate}>
+          {careNav.map(({ to, label, icon: Icon, end }) => (
+            <NavLink key={to} to={to} end={end} className={linkClass} onClick={onNavigate}>
               <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" strokeWidth={2} />
               {label}
             </NavLink>
@@ -94,18 +101,25 @@ function SidebarChrome({
   userName,
   userRole,
   initial,
+  photoUrl,
   onRequestLogout,
 }: {
   userName: string;
   userRole: string;
   initial: string;
+  photoUrl?: string;
   onRequestLogout: () => void;
 }) {
   return (
     <div className="mt-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
       <div className="flex gap-2.5">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-300 to-sky-400 font-display text-[13px] font-medium text-[#04132a]">
-          {initial}
+          <UserAvatar
+            name={userName || initial}
+            photoUrl={photoUrl}
+            className="h-9 w-9"
+            fallbackClassName="h-9 w-9 bg-gradient-to-br from-teal-300 to-sky-400 text-[13px] text-[#04132a]"
+          />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -137,6 +151,7 @@ function SidebarChrome({
 
 export function PatientLayout() {
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const clearSession = useAuthStore((s) => s.clearSession);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
@@ -144,6 +159,21 @@ export function PatientLayout() {
 
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Patient';
   const initial = (user?.firstName?.[0] ?? user?.email?.[0] ?? 'P').toUpperCase();
+  const profilePhotoUrl = user?.profilePhotoUrl;
+
+  const patientMeQuery = useQuery({
+    queryKey: ['patients', 'me'],
+    queryFn: getPatientMe,
+    enabled: Boolean(user) && !profilePhotoUrl,
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    const url = patientMeQuery.data?.profilePhotoUrl;
+    if (typeof url === 'string' && url && user && !user.profilePhotoUrl) {
+      setUser({ ...user, profilePhotoUrl: url });
+    }
+  }, [patientMeQuery.data, user, setUser]);
 
   async function performLogout() {
     await logout();
@@ -184,6 +214,7 @@ export function PatientLayout() {
             userName={displayName}
             userRole="Patient"
             initial={initial}
+            photoUrl={profilePhotoUrl}
             onRequestLogout={() => setConfirmLogoutOpen(true)}
           />
         </div>
@@ -214,6 +245,7 @@ export function PatientLayout() {
                 userName={displayName}
                 userRole="Patient"
                 initial={initial}
+                photoUrl={profilePhotoUrl}
                 onRequestLogout={() => setConfirmLogoutOpen(true)}
               />
             </div>
@@ -270,18 +302,20 @@ export function PatientLayout() {
               asChild
               className="hidden h-9 gap-1.5 rounded-[9px] bg-gradient-to-br from-sky-500 to-sky-700 px-4 text-[13px] font-medium text-white shadow-[0_4px_12px_rgba(14,165,233,0.25)] hover:from-sky-600 hover:to-sky-800 sm:inline-flex"
             >
-              <Link to={ROUTES.findDoctor}>
+              <Link to={ROUTES.patient.findDoctor}>
                 <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
                 Book a visit
               </Link>
             </Button>
-            <Link
-              to={ROUTES.patient.profile}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-white bg-gradient-to-br from-violet-300 to-violet-600 font-display text-[13px] font-medium text-white shadow-[0_0_0_1px_#e2e8f0]"
-              title="Profile"
-            >
-              {initial}
-            </Link>
+            <HeaderProfileMenu
+              displayName={displayName}
+              email={user?.email}
+              initial={initial}
+              photoUrl={profilePhotoUrl}
+              accountHref={ROUTES.patient.profile}
+              onLogout={() => setConfirmLogoutOpen(true)}
+              avatarClassName="bg-gradient-to-br from-violet-300 to-violet-600 text-white"
+            />
           </div>
         </header>
 

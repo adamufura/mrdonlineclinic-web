@@ -58,16 +58,53 @@ export async function patchPatientProfile(body: Record<string, unknown>): Promis
   return unwrapData(data, 'Failed to update profile');
 }
 
-/** PATCH /api/v1/patients/me/medical — body matches backend `updatePatientMedicalSchema`. */
+/** PATCH /api/v1/patients/me/medical — partial body (legacy combined update). */
 export async function patchPatientMedical(body: Record<string, unknown>): Promise<Record<string, unknown>> {
   const { data } = await api.patch<ApiEnvelope<Record<string, unknown>>>('/patients/me/medical', body);
   return unwrapData(data, 'Failed to update medical info');
 }
 
+export async function patchPatientHealthRecord(body: {
+  allergies: string[];
+  chronicConditions: string[];
+  currentMedications: string[];
+}): Promise<Record<string, unknown>> {
+  const { data } = await api.patch<ApiEnvelope<Record<string, unknown>>>('/patients/me/medical/health-record', body);
+  return unwrapData(data, 'Failed to update health record');
+}
+
+export async function patchPatientEmergency(body: {
+  emergencyContact: { name: string; relationship: string; phoneNumber: string } | null;
+}): Promise<Record<string, unknown>> {
+  const { data } = await api.patch<ApiEnvelope<Record<string, unknown>>>('/patients/me/medical/emergency', body);
+  return unwrapData(data, 'Failed to update emergency contact');
+}
+
+export async function patchPatientAddress(body: {
+  address: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+  } | null;
+}): Promise<Record<string, unknown>> {
+  const { data } = await api.patch<ApiEnvelope<Record<string, unknown>>>('/patients/me/medical/address', body);
+  return unwrapData(data, 'Failed to update address');
+}
+
 /** POST /api/v1/patients/me/photo — multipart field name `file` (image only, max 5MB). */
 export async function uploadPatientPhoto(file: File): Promise<{ profilePhotoUrl: string }> {
   const form = new FormData();
-  form.append('file', file);
-  const { data } = await api.post<ApiEnvelope<{ profilePhotoUrl: string }>>('/patients/me/photo', form);
+  form.append('file', file, file.name || 'profile.jpg');
+  const { data } = await api.post<ApiEnvelope<{ profilePhotoUrl: string }>>('/patients/me/photo', form, {
+    // Let the browser set multipart boundary (do not use application/json default).
+    transformRequest: [(body, headers) => {
+      if (headers && typeof headers.delete === 'function') {
+        headers.delete('Content-Type');
+      }
+      return body;
+    }],
+  });
   return unwrapData(data, 'Upload failed');
 }

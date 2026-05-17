@@ -22,6 +22,7 @@ import {
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { BrandMark } from '@/components/brand/BrandMark';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { HeaderProfileMenu } from '@/components/shared/header-profile-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { logout } from '@/features/auth/api';
@@ -376,13 +377,14 @@ function PractitionerLayoutInner() {
               <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
               <span className="hidden sm:inline">Create slot</span>
             </Button>
-            <Link
-              to={ROUTES.practitioner.profile}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-white bg-gradient-to-br from-teal-300 to-sky-400 font-display text-[13px] font-medium text-[#04132a] shadow-[0_0_0_1px_#e2e8f0]"
-              title="Profile"
-            >
-              {initial}
-            </Link>
+            <HeaderProfileMenu
+              displayName={displayName}
+              email={user?.email}
+              initial={initial}
+              accountHref={ROUTES.practitioner.profile}
+              onLogout={() => setConfirmLogoutOpen(true)}
+              avatarClassName="bg-gradient-to-br from-teal-300 to-sky-400 text-[#04132a]"
+            />
           </div>
         </header>
 

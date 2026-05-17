@@ -26,6 +26,7 @@ export type AuthUser = {
   status: string;
   isEmailVerified: boolean;
   lastLoginAt?: string;
+  profilePhotoUrl?: string;
 };
 
 export type TokenPair = {

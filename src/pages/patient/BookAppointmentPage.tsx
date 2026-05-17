@@ -48,7 +48,7 @@ export default function PatientBookAppointmentPage() {
       <div className="space-y-6">
         <div>
           {id ? (
-            <Link to={ROUTES.findDoctorProfile(id)} className="text-sm font-medium text-teal-800 hover:underline">
+            <Link to={ROUTES.patient.findDoctorProfile(id)} className="text-sm font-medium text-teal-800 hover:underline">
               ← Back to profile
             </Link>
           ) : null}

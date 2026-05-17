@@ -41,20 +41,37 @@ export function profileFormToPatch(values: PatientProfileFormValues): Record<str
   return patch;
 }
 
-/** Mirrors backend `updatePatientMedicalSchema`. */
-export const patientMedicalFormSchema = z
+function linesToArray(text: string | undefined): string[] {
+  if (!text?.trim()) return [];
+  return text
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Health record section — PATCH /patients/me/medical/health-record */
+export const healthRecordFormSchema = z.object({
+  allergiesText: z.string().optional(),
+  chronicConditionsText: z.string().optional(),
+  currentMedicationsText: z.string().optional(),
+});
+
+export type HealthRecordFormValues = z.infer<typeof healthRecordFormSchema>;
+
+export function healthRecordFormToPatch(values: HealthRecordFormValues) {
+  return {
+    allergies: linesToArray(values.allergiesText),
+    chronicConditions: linesToArray(values.chronicConditionsText),
+    currentMedications: linesToArray(values.currentMedicationsText),
+  };
+}
+
+/** Emergency section — PATCH /patients/me/medical/emergency */
+export const emergencyContactFormSchema = z
   .object({
-    allergiesText: z.string().optional(),
-    chronicConditionsText: z.string().optional(),
-    currentMedicationsText: z.string().optional(),
     emergencyName: z.string().optional(),
     emergencyRelationship: z.string().optional(),
     emergencyPhone: z.string().optional(),
-    addressStreet: z.string().optional(),
-    addressCity: z.string().optional(),
-    addressState: z.string().optional(),
-    addressCountry: z.string().optional(),
-    addressPostalCode: z.string().optional(),
   })
   .refine(
     (v) => {
@@ -64,32 +81,39 @@ export const patientMedicalFormSchema = z
       if (!n && !r && !p) return true;
       return n.length > 0 && r.length > 0 && p.length >= 5;
     },
-    { message: 'Complete emergency name, relationship, and phone, or leave them all empty.', path: ['emergencyName'] },
+    { message: 'Enter name, relationship, and phone, or clear all fields to remove.', path: ['emergencyName'] },
   );
 
-export type PatientMedicalFormValues = z.infer<typeof patientMedicalFormSchema>;
+export type EmergencyContactFormValues = z.infer<typeof emergencyContactFormSchema>;
 
-function linesToArray(text: string | undefined): string[] {
-  if (!text?.trim()) return [];
-  return text
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+export function emergencyFormToPatch(values: EmergencyContactFormValues) {
+  const n = values.emergencyName?.trim() ?? '';
+  const r = values.emergencyRelationship?.trim() ?? '';
+  const p = values.emergencyPhone?.trim() ?? '';
+  if (!n && !r && !p) {
+    return { emergencyContact: null };
+  }
+  return {
+    emergencyContact: {
+      name: n,
+      relationship: r,
+      phoneNumber: p,
+    },
+  };
 }
 
-export function medicalFormToPatch(values: PatientMedicalFormValues): Record<string, unknown> {
-  const patch: Record<string, unknown> = {
-    allergies: linesToArray(values.allergiesText),
-    chronicConditions: linesToArray(values.chronicConditionsText),
-    currentMedications: linesToArray(values.currentMedicationsText),
-  };
-  if (values.emergencyName?.trim() && values.emergencyRelationship?.trim() && values.emergencyPhone?.trim()) {
-    patch.emergencyContact = {
-      name: values.emergencyName.trim(),
-      relationship: values.emergencyRelationship.trim(),
-      phoneNumber: values.emergencyPhone.trim(),
-    };
-  }
+/** Address section — PATCH /patients/me/medical/address */
+export const addressFormSchema = z.object({
+  addressStreet: z.string().optional(),
+  addressCity: z.string().optional(),
+  addressState: z.string().optional(),
+  addressCountry: z.string().optional(),
+  addressPostalCode: z.string().optional(),
+});
+
+export type AddressFormValues = z.infer<typeof addressFormSchema>;
+
+export function addressFormToPatch(values: AddressFormValues) {
   const addr = {
     street: values.addressStreet?.trim() || undefined,
     city: values.addressCity?.trim() || undefined,
@@ -98,8 +122,20 @@ export function medicalFormToPatch(values: PatientMedicalFormValues): Record<str
     postalCode: values.addressPostalCode?.trim() || undefined,
   };
   const hasAddr = Object.values(addr).some(Boolean);
-  patch.address = hasAddr ? addr : undefined;
-  return patch;
+  return { address: hasAddr ? addr : null };
+}
+
+/** Combined values for legacy helpers — use section schemas in forms. */
+export type PatientMedicalFormValues = HealthRecordFormValues &
+  EmergencyContactFormValues &
+  AddressFormValues;
+
+export function medicalFormToPatch(values: PatientMedicalFormValues): Record<string, unknown> {
+  return {
+    ...healthRecordFormToPatch(values),
+    ...emergencyFormToPatch(values),
+    ...addressFormToPatch(values),
+  };
 }
 
 export function patientDocToProfileForm(p: Record<string, unknown>): PatientProfileFormValues {
@@ -116,21 +152,42 @@ export function patientDocToProfileForm(p: Record<string, unknown>): PatientProf
   };
 }
 
-export function patientDocToMedicalForm(p: Record<string, unknown>): PatientMedicalFormValues {
-  const ec = p.emergencyContact as Record<string, unknown> | undefined;
-  const addr = p.address as Record<string, unknown> | undefined;
-  const arr = (v: unknown) => (Array.isArray(v) ? (v as string[]).join('\n') : '');
+function arrayToLines(v: unknown): string {
+  return Array.isArray(v) ? (v as string[]).join('\n') : '';
+}
+
+export function patientDocToHealthRecordForm(p: Record<string, unknown>): HealthRecordFormValues {
   return {
-    allergiesText: arr(p.allergies),
-    chronicConditionsText: arr(p.chronicConditions),
-    currentMedicationsText: arr(p.currentMedications),
+    allergiesText: arrayToLines(p.allergies),
+    chronicConditionsText: arrayToLines(p.chronicConditions),
+    currentMedicationsText: arrayToLines(p.currentMedications),
+  };
+}
+
+export function patientDocToEmergencyForm(p: Record<string, unknown>): EmergencyContactFormValues {
+  const ec = p.emergencyContact as Record<string, unknown> | undefined;
+  return {
     emergencyName: ec?.name != null ? String(ec.name) : '',
     emergencyRelationship: ec?.relationship != null ? String(ec.relationship) : '',
     emergencyPhone: ec?.phoneNumber != null ? String(ec.phoneNumber) : '',
+  };
+}
+
+export function patientDocToAddressForm(p: Record<string, unknown>): AddressFormValues {
+  const addr = p.address as Record<string, unknown> | undefined;
+  return {
     addressStreet: addr?.street != null ? String(addr.street) : '',
     addressCity: addr?.city != null ? String(addr.city) : '',
     addressState: addr?.state != null ? String(addr.state) : '',
     addressCountry: addr?.country != null ? String(addr.country) : '',
     addressPostalCode: addr?.postalCode != null ? String(addr.postalCode) : '',
+  };
+}
+
+export function patientDocToMedicalForm(p: Record<string, unknown>): PatientMedicalFormValues {
+  return {
+    ...patientDocToHealthRecordForm(p),
+    ...patientDocToEmergencyForm(p),
+    ...patientDocToAddressForm(p),
   };
 }

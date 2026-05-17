@@ -23,6 +23,8 @@ export const ROUTES = {
     messages: '/patient/messages',
     messagesRoom: (roomId: string) => `/patient/messages/${roomId}` as const,
     prescriptions: '/patient/prescriptions',
+    findDoctor: '/patient/find-doctor',
+    findDoctorProfile: (id: string) => `/patient/find-doctor/${id}` as const,
     profile: '/patient/profile',
     profileMedical: '/patient/profile/medical',
   },

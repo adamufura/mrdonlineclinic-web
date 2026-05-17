@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { readStoredAccessToken, writeStoredAccessToken } from '@/lib/auth/access-token-storage';
 import type { AuthUser } from '@/types/api';
 
 export type AuthBootstrapStatus = 'idle' | 'loading' | 'ready';
@@ -15,12 +16,21 @@ type AuthState = {
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
+  accessToken: readStoredAccessToken(),
   user: null,
   bootstrapStatus: 'idle',
-  setAccessToken: (accessToken) => set({ accessToken }),
+  setAccessToken: (accessToken) => {
+    writeStoredAccessToken(accessToken);
+    set({ accessToken });
+  },
   setUser: (user) => set({ user }),
-  setSession: (user, accessToken) => set({ user, accessToken }),
-  clearSession: () => set({ accessToken: null, user: null }),
+  setSession: (user, accessToken) => {
+    writeStoredAccessToken(accessToken);
+    set({ user, accessToken });
+  },
+  clearSession: () => {
+    writeStoredAccessToken(null);
+    set({ accessToken: null, user: null });
+  },
   setBootstrapStatus: (bootstrapStatus) => set({ bootstrapStatus }),
 }));

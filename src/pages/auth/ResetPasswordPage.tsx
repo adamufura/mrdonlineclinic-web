@@ -9,16 +9,16 @@ import { ArrowRight, Lock } from 'lucide-react';
 import { AuthEyebrow } from '@/components/auth/AuthEyebrow';
 import { PasswordMeter } from '@/components/auth/PasswordMeter';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { resetPassword } from '@/features/auth/api';
 import { normalizeAxiosError } from '@/lib/api/errors';
-import { strongPasswordSchema } from '@/lib/validators/auth';
+import { passwordSchema } from '@/lib/validators/auth';
 import { ROUTES } from '@/router/routes';
 
 const schema = z
   .object({
-    password: strongPasswordSchema,
+    password: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' });
@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
           Choose a new <em className="text-brand-hero-blue not-italic">password.</em>
         </h1>
         <p className="mt-3 max-w-md text-[15px] leading-relaxed text-brand-body">
-          Use a strong password you have not used elsewhere.
+          Use 6–12 characters with letters, numbers, or symbols.
         </p>
       </div>
 
@@ -80,15 +80,14 @@ export default function ResetPasswordPage() {
           <Label htmlFor="password" className="text-[12px] font-medium text-slate-700">
             New password
           </Label>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
-            <Input
-              id="password"
-              type="password"
-              className="rounded-xl border-slate-200 pl-12 focus-visible:border-sky-500 focus-visible:ring-sky-500/20"
-              {...form.register('password')}
-            />
-          </div>
+          <PasswordInput
+            id="password"
+            leftIcon={<Lock strokeWidth={2} />}
+            autoComplete="new-password"
+            maxLength={12}
+            className="rounded-xl border-slate-200 focus-visible:border-sky-500 focus-visible:ring-sky-500/20"
+            {...form.register('password')}
+          />
           <PasswordMeter password={pwd ?? ''} />
           {form.formState.errors.password ? (
             <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
@@ -98,15 +97,14 @@ export default function ResetPasswordPage() {
           <Label htmlFor="confirmPassword" className="text-[12px] font-medium text-slate-700">
             Confirm password
           </Label>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
-            <Input
-              id="confirmPassword"
-              type="password"
-              className="rounded-xl border-slate-200 pl-12 focus-visible:border-sky-500 focus-visible:ring-sky-500/20"
-              {...form.register('confirmPassword')}
-            />
-          </div>
+          <PasswordInput
+            id="confirmPassword"
+            leftIcon={<Lock strokeWidth={2} />}
+            autoComplete="new-password"
+            maxLength={12}
+            className="rounded-xl border-slate-200 focus-visible:border-sky-500 focus-visible:ring-sky-500/20"
+            {...form.register('confirmPassword')}
+          />
           {form.formState.errors.confirmPassword ? (
             <p className="text-sm text-destructive">{form.formState.errors.confirmPassword.message}</p>
           ) : null}
