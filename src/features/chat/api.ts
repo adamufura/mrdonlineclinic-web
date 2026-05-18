@@ -43,10 +43,49 @@ export async function listChatMessages(
   return { items, meta };
 }
 
-export async function postChatMessage(roomId: string, content: string): Promise<Record<string, unknown>> {
+export async function postChatMessage(
+  roomId: string,
+  content: string,
+  options?: {
+    messageType?: string;
+    attachments?: { url: string; type?: string; fileName?: string; size?: number; mimeType?: string; duration?: number }[];
+  },
+): Promise<Record<string, unknown>> {
   const { data } = await api.post<ApiEnvelope<Record<string, unknown>>>(`/chat/rooms/${roomId}/messages`, {
-    content,
-    messageType: 'TEXT',
+    content: content || undefined,
+    messageType: options?.messageType ?? 'TEXT',
+    attachments: options?.attachments,
   });
   return unwrapData(data, 'Failed to send message');
+}
+
+export type UploadResult = {
+  url: string;
+  type: 'image' | 'voice';
+  fileName: string;
+  mimeType: string;
+  size: number;
+  duration: number | null;
+};
+
+export async function uploadChatFile(
+  roomId: string,
+  file: Blob,
+  fileName: string,
+  onProgress?: (percent: number) => void,
+): Promise<UploadResult> {
+  const formData = new FormData();
+  formData.append('file', file, fileName);
+  const { data } = await api.post<ApiEnvelope<UploadResult>>(
+    `/chat/rooms/${roomId}/upload`,
+    formData,
+    {
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) {
+          onProgress(Math.round((e.loaded * 100) / e.total));
+        }
+      },
+    },
+  );
+  return unwrapData(data, 'Upload failed');
 }

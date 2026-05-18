@@ -3,12 +3,17 @@ import { format, isToday, isYesterday } from 'date-fns';
 import {
   ArrowLeft,
   Calendar,
+  Image as ImageIcon,
   Loader2,
   MessageCircle,
+  Mic,
   MoreHorizontal,
+  Pause,
+  Play,
   Search,
   Send,
   Stethoscope,
+  X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -17,7 +22,7 @@ import { toast } from 'sonner';
 import { profilePhotoFrom, UserAvatar } from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getChatRoom, listChatMessages, listChatRooms, markChatRoomReadAll as markRoomReadApi, postChatMessage } from '@/features/chat/api';
+import { getChatRoom, listChatMessages, listChatRooms, markChatRoomReadAll as markRoomReadApi, postChatMessage, uploadChatFile } from '@/features/chat/api';
 import { useChatSocket } from '@/features/chat/use-chat-socket';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/stores/auth-store';
@@ -75,7 +80,6 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
 
   const [listFilter, setListFilter] = useState<'all' | 'unread'>('all');
   const [search, setSearch] = useState('');
-  const [draft, setDraft] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const roomsQuery = useQuery({
@@ -126,7 +130,6 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
   const sendMut = useMutation({
     mutationFn: ({ id, text }: { id: string; text: string }) => postChatMessage(id, text),
     onSuccess: async () => {
-      setDraft('');
       await qc.invalidateQueries({ queryKey: ['chat', 'messages', roomId] });
       await qc.invalidateQueries({ queryKey: ['chat', 'rooms'] });
       await qc.invalidateQueries({ queryKey: ['chat', 'room', roomId] });
@@ -391,21 +394,40 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                       const mine = myId && senderId(m) === myId;
                       const t = m.createdAt ? format(new Date(String(m.createdAt)), 'h:mm a') : '';
                       const body = typeof m.content === 'string' ? m.content : '';
+                      const msgType = typeof m.messageType === 'string' ? m.messageType : 'TEXT';
+                      const attachments = Array.isArray(m.attachments) ? m.attachments : [];
+
                       return (
                         <div key={String(m._id ?? i)} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
                           <div
                             className={cn(
-                              'max-w-[85%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed shadow-sm',
+                              'max-w-[85%] rounded-2xl shadow-sm',
                               mine
                                 ? 'rounded-br-md bg-gradient-to-br from-sky-500 to-sky-700 text-white'
                                 : 'rounded-bl-md border border-[#e8edf4] bg-white text-[#0a1628]',
+                              msgType === 'IMAGE' ? 'overflow-hidden p-1' : 'px-4 py-2.5',
                             )}
                           >
-                            <p className="whitespace-pre-wrap break-words">{body}</p>
+                            {/* Image message */}
+                            {msgType === 'IMAGE' && attachments.length > 0 ? (
+                              <ImageBubble attachments={attachments} caption={body} mine={mine} />
+                            ) : null}
+
+                            {/* Voice message */}
+                            {msgType === 'VOICE' && attachments.length > 0 ? (
+                              <VoiceNoteBubble attachment={attachments[0]} mine={mine} />
+                            ) : null}
+
+                            {/* Text message */}
+                            {msgType === 'TEXT' || (msgType !== 'IMAGE' && msgType !== 'VOICE') ? (
+                              <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">{body}</p>
+                            ) : null}
+
                             <p
                               className={cn(
                                 'mt-1 text-[10px] font-medium tabular-nums',
                                 mine ? 'text-sky-100' : 'text-[#94a3b8]',
+                                msgType === 'IMAGE' && 'px-2 pb-1',
                               )}
                             >
                               {t}
@@ -422,35 +444,16 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                   {isLocked ? (
                     <p className="text-center text-xs text-[#64748b]">This conversation is closed after your visit was completed.</p>
                   ) : (
-                    <form
-                      className="mx-auto flex max-w-[720px] items-end gap-2"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const text = draft.trim();
-                        if (!roomId || !text || sendMut.isPending) return;
-                        sendMut.mutate({ id: roomId, text });
+                    <ChatComposer
+                      roomId={roomId!}
+                      disabled={sendMut.isPending}
+                      onSendText={(text) => sendMut.mutate({ id: roomId!, text })}
+                      onSent={async () => {
+                        await qc.invalidateQueries({ queryKey: ['chat', 'messages', roomId] });
+                        await qc.invalidateQueries({ queryKey: ['chat', 'rooms'] });
+                        await qc.invalidateQueries({ queryKey: ['chat', 'room', roomId] });
                       }}
-                    >
-                      <div className="relative min-w-0 flex-1">
-                        <Input
-                          value={draft}
-                          onChange={(e) => setDraft(e.target.value)}
-                          placeholder="Message…"
-                          className="min-h-[44px] resize-none rounded-[14px] border-[#e2e8f0] bg-[#f8fafc] py-3 pr-12 text-[13px] shadow-inner"
-                          disabled={sendMut.isPending}
-                          maxLength={10000}
-                        />
-                        <Button
-                          type="submit"
-                          size="icon"
-                          disabled={!draft.trim() || sendMut.isPending}
-                          className="absolute bottom-1.5 right-1.5 h-9 w-9 rounded-full bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md hover:from-sky-600 hover:to-sky-800"
-                          aria-label="Send"
-                        >
-                          {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </form>
+                    />
                   )}
                 </footer>
               </>
@@ -512,4 +515,463 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
       </div>
     </>
   );
+}
+
+/* ─── Image Bubble ─── */
+function ImageBubble({ attachments, caption, mine }: { attachments: unknown[]; caption: string; mine: boolean }) {
+  const [lightbox, setLightbox] = useState(false);
+  const att = isRecord(attachments[0]) ? (attachments[0] as Record<string, unknown>) : null;
+  const url = att && typeof att.url === 'string' ? att.url : '';
+  if (!url) return null;
+
+  return (
+    <>
+      <button type="button" onClick={() => setLightbox(true)} className="block">
+        <img
+          src={url}
+          alt={caption || 'Image'}
+          className="max-w-[280px] rounded-xl object-cover"
+          loading="lazy"
+        />
+      </button>
+      {caption ? (
+        <p className={cn('mt-1 px-2 text-[13px] leading-relaxed', mine ? 'text-white' : 'text-[#0a1628]')}>
+          {caption}
+        </p>
+      ) : null}
+      {lightbox ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightbox(false)}
+          onKeyDown={(e) => e.key === 'Escape' && setLightbox(false)}
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-full bg-white/20 p-2 text-white hover:bg-white/30"
+            onClick={() => setLightbox(false)}
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <img src={url} alt={caption || 'Image'} className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain" />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/* ─── Voice Note Bubble ─── */
+function VoiceNoteBubble({ attachment, mine }: { attachment: unknown; mine: boolean }) {
+  const att = isRecord(attachment) ? (attachment as Record<string, unknown>) : null;
+  const url = att && typeof att.url === 'string' ? att.url : '';
+  const duration = att && typeof att.duration === 'number' ? att.duration : 0;
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  function togglePlay() {
+    if (!url) return;
+    if (!audioRef.current) {
+      audioRef.current = new Audio(url);
+      audioRef.current.addEventListener('timeupdate', () => {
+        const a = audioRef.current;
+        if (a && a.duration) {
+          setProgress((a.currentTime / a.duration) * 100);
+          setCurrentTime(Math.floor(a.currentTime));
+        }
+      });
+      audioRef.current.addEventListener('ended', () => {
+        setPlaying(false);
+        setProgress(0);
+        setCurrentTime(0);
+      });
+    }
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+    } else {
+      audioRef.current.play();
+      setPlaying(true);
+    }
+  }
+
+  const formatDur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  return (
+    <div className="flex items-center gap-3 min-w-[200px]">
+      <button
+        type="button"
+        onClick={togglePlay}
+        className={cn(
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors',
+          mine ? 'bg-white/20 hover:bg-white/30' : 'bg-sky-100 hover:bg-sky-200',
+        )}
+      >
+        {playing ? (
+          <Pause className={cn('h-4 w-4', mine ? 'text-white' : 'text-sky-700')} />
+        ) : (
+          <Play className={cn('h-4 w-4', mine ? 'text-white' : 'text-sky-700')} />
+        )}
+      </button>
+      <div className="min-w-0 flex-1">
+        <div className={cn('h-1.5 rounded-full overflow-hidden', mine ? 'bg-white/20' : 'bg-[#e2e8f0]')}>
+          <div
+            className={cn('h-full rounded-full transition-all', mine ? 'bg-white/80' : 'bg-sky-500')}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+      <span className={cn('shrink-0 text-[11px] font-medium tabular-nums', mine ? 'text-sky-100' : 'text-[#64748b]')}>
+        {playing ? formatDur(currentTime) : formatDur(duration)}
+      </span>
+    </div>
+  );
+}
+
+/* ─── Chat Composer with Image + Voice ─── */
+function ChatComposer({
+  roomId,
+  disabled,
+  onSendText,
+  onSent,
+}: {
+  roomId: string;
+  disabled: boolean;
+  onSendText: (text: string) => void;
+  onSent: () => Promise<void>;
+}) {
+  const qc = useQueryClient();
+  const [draft, setDraft] = useState('');
+  const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const hasText = draft.trim().length > 0;
+  const hasImage = imagePreview !== null;
+  const showMic = !hasText && !hasImage;
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  // Reset when room changes
+  useEffect(() => {
+    setDraft('');
+    setImagePreview(null);
+    setRecording(false);
+    setRecordingTime(0);
+  }, [roomId]);
+
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Only images are supported');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be under 5MB');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setImagePreview({ file, url });
+    e.target.value = '';
+  }
+
+  function clearImage() {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview.url);
+      setImagePreview(null);
+    }
+  }
+
+  async function sendImageMessage() {
+    if (!imagePreview || uploading) return;
+    setUploading(true);
+    try {
+      const result = await uploadChatFile(roomId, imagePreview.file, imagePreview.file.name);
+      await postChatMessage(roomId, draft.trim(), {
+        messageType: 'IMAGE',
+        attachments: [{
+          url: result.url,
+          type: 'image',
+          fileName: result.fileName,
+          size: result.size,
+          mimeType: result.mimeType,
+        }],
+      });
+      clearImage();
+      setDraft('');
+      await onSent();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to send image');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      // Prefer mp4 (plays on iOS) → webm (Chrome fallback) → ogg
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm')
+            ? 'audio/webm'
+            : 'audio/ogg';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+
+        const blobMime = mimeType.split(';')[0]; // strip codecs param
+        const blob = new Blob(chunksRef.current, { type: blobMime });
+        if (blob.size < 1000) {
+          // Too short, discard
+          setRecording(false);
+          setRecordingTime(0);
+          return;
+        }
+
+        // Get duration
+        const duration = await getAudioDuration(blob);
+
+        setUploading(true);
+        setRecording(false);
+        try {
+          const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+          const result = await uploadChatFile(roomId, blob, `voice-note.${ext}`);
+          await postChatMessage(roomId, '', {
+            messageType: 'VOICE',
+            attachments: [{
+              url: result.url,
+              type: 'voice',
+              fileName: result.fileName,
+              size: result.size,
+              mimeType: result.mimeType,
+              duration,
+            }],
+          });
+          await onSent();
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : 'Failed to send voice note');
+        } finally {
+          setUploading(false);
+          setRecordingTime(0);
+        }
+      };
+
+      recorder.start();
+      setRecording(true);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => {
+        setRecordingTime((t) => {
+          if (t >= 300) {
+            // 5 min max
+            mediaRecorderRef.current?.stop();
+            return t;
+          }
+          return t + 1;
+        });
+      }, 1000);
+    } catch {
+      toast.error('Microphone permission denied');
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+  }
+
+  function cancelRecording() {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.ondataavailable = null;
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    chunksRef.current = [];
+    setRecording(false);
+    setRecordingTime(0);
+  }
+
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (hasImage) {
+      sendImageMessage();
+      return;
+    }
+    const text = draft.trim();
+    if (!text) return;
+    onSendText(text);
+    setDraft('');
+  }
+
+  // Recording UI
+  if (recording) {
+    return (
+      <div className="mx-auto flex max-w-[720px] items-center gap-3 rounded-[14px] border border-rose-200 bg-rose-50 px-4 py-3">
+        <span className="h-3 w-3 animate-pulse rounded-full bg-rose-500" />
+        <span className="font-mono text-sm font-medium tabular-nums text-rose-800">{formatTime(recordingTime)}</span>
+        <span className="flex-1 text-xs text-rose-600">Recording…</span>
+        <button
+          type="button"
+          onClick={cancelRecording}
+          className="rounded-lg px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={stopRecording}
+          className="flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700"
+        >
+          <Send className="h-3 w-3" />
+          Send
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-[720px]">
+      {/* Image preview */}
+      {imagePreview ? (
+        <div className="mb-2 flex items-start gap-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-2">
+          <img src={imagePreview.url} alt="Preview" className="h-16 w-16 rounded-lg object-cover" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-medium text-[#0a1628]">{imagePreview.file.name}</p>
+            <p className="text-[11px] text-[#94a3b8]">{(imagePreview.file.size / 1024).toFixed(0)} KB</p>
+          </div>
+          <button
+            type="button"
+            onClick={clearImage}
+            className="shrink-0 rounded-md p-1 text-[#94a3b8] hover:bg-rose-50 hover:text-rose-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
+
+      <form className="flex items-end gap-2" onSubmit={handleSubmit}>
+        {/* Image attachment button */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled || uploading || recording}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#64748b] transition-colors hover:bg-[#f1f5f9] hover:text-sky-700 disabled:opacity-40"
+          title="Attach image"
+        >
+          <ImageIcon className="h-5 w-5" />
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
+
+        {/* Text input */}
+        <div className="relative min-w-0 flex-1">
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Message…"
+            className="min-h-[44px] resize-none rounded-[14px] border-[#e2e8f0] bg-[#f8fafc] py-3 pr-4 text-[13px] shadow-inner"
+            disabled={disabled || uploading}
+            maxLength={10000}
+          />
+        </div>
+
+        {/* Send or Mic button */}
+        {showMic ? (
+          <button
+            type="button"
+            onMouseDown={startRecording}
+            disabled={disabled || uploading}
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors',
+              'bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md hover:from-sky-600 hover:to-sky-800',
+              'disabled:opacity-40',
+            )}
+            title="Hold to record voice note"
+          >
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
+          </button>
+        ) : (
+          <Button
+            type="submit"
+            size="icon"
+            disabled={disabled || uploading || (!hasText && !hasImage)}
+            className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-sky-500 to-sky-700 text-white shadow-md hover:from-sky-600 hover:to-sky-800"
+            aria-label="Send"
+          >
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </Button>
+        )}
+      </form>
+    </div>
+  );
+}
+
+/* ─── Utility ─── */
+function getAudioDuration(blob: Blob): Promise<number> {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.src = URL.createObjectURL(blob);
+    audio.onloadedmetadata = () => {
+      const dur = Math.round(audio.duration);
+      URL.revokeObjectURL(audio.src);
+      resolve(Number.isFinite(dur) ? dur : 0);
+    };
+    audio.onerror = () => resolve(0);
+  });
 }

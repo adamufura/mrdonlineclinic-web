@@ -5,10 +5,12 @@ import {
   Calendar,
   Check,
   Clock,
+  FileText,
   Loader2,
   Mail,
   MessageSquare,
   Phone,
+  Pill,
   Stethoscope,
   User,
   X,
@@ -39,6 +41,7 @@ import {
   practitionerRejectAppointment,
   practitionerStartAppointment,
 } from '@/features/appointments/api';
+import { IssuePrescriptionDialog } from '@/features/prescriptions/issue-prescription-dialog';
 import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/router/routes';
 
@@ -93,6 +96,7 @@ export default function PractitionerAppointmentDetailPage() {
   const [noShowOpen, setNoShowOpen] = useState(false);
   const [notes, setNotes] = useState('');
   const [notesDirty, setNotesDirty] = useState(false);
+  const [prescriptionOpen, setPrescriptionOpen] = useState(false);
 
   const apptQuery = useQuery({
     queryKey: ['appointments', 'detail', validId],
@@ -489,6 +493,27 @@ export default function PractitionerAppointmentDetailPage() {
                     {['COMPLETED', 'REJECTED', 'NO_SHOW', 'CANCELLED'].includes(status) ? (
                       <p className="text-sm text-[#64748b]">No further status changes from this screen.</p>
                     ) : null}
+                    {status === 'COMPLETED' && !appt.prescription ? (
+                      <Button
+                        type="button"
+                        className="w-full justify-center gap-2 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 text-white shadow-sm hover:from-rose-600 hover:to-rose-800"
+                        onClick={() => setPrescriptionOpen(true)}
+                      >
+                        <Pill className="size-4" />
+                        Issue prescription
+                      </Button>
+                    ) : null}
+                    {status === 'COMPLETED' && appt.prescription ? (
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                        <div className="flex items-center gap-2">
+                          <FileText className="size-4 text-emerald-600" />
+                          <p className="text-sm font-medium text-emerald-900">Prescription issued</p>
+                        </div>
+                        <p className="mt-1 text-xs text-emerald-700">
+                          A prescription has already been issued for this appointment.
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 </section>
 
@@ -592,6 +617,15 @@ export default function PractitionerAppointmentDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {validId && appt ? (
+        <IssuePrescriptionDialog
+          open={prescriptionOpen}
+          onOpenChange={setPrescriptionOpen}
+          appointmentId={validId}
+          patientName={patientName(appt)}
+        />
+      ) : null}
     </>
   );
 }
