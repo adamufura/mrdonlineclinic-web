@@ -7,12 +7,13 @@ import {
   Loader2,
   MessageCircle,
   Mic,
-  MoreHorizontal,
   Pause,
+  Phone,
   Play,
   Search,
   Send,
   Stethoscope,
+  Video,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,6 +25,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getChatRoom, listChatMessages, listChatRooms, markChatRoomReadAll as markRoomReadApi, postChatMessage, uploadChatFile } from '@/features/chat/api';
 import { useChatSocket } from '@/features/chat/use-chat-socket';
+import { useAgoraCall } from '@/features/calls/use-agora-call';
+import { ActiveCallOverlay, IncomingCallOverlay, OutgoingCallOverlay } from '@/features/calls/CallOverlays';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -101,6 +104,9 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
 
   useChatSocket(roomId, token, myId, Boolean(roomId && token));
 
+  // ─── Agora Calls ───
+  const agoraCall = useAgoraCall();
+
   const lastMarkedRoom = useRef<string | null>(null);
 
   useEffect(() => {
@@ -157,6 +163,20 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
   const apptId = appointment && appointment._id != null ? String(appointment._id) : null;
   const isLocked = Boolean(isRecord(activeRoom) && activeRoom.isLocked);
 
+  const activeApptId: string | null = (() => {
+    if (!activeRoom || !isRecord(activeRoom)) return null;
+    const appt = isRecord(activeRoom.appointment) ? activeRoom.appointment : null;
+    return appt && appt._id ? String(appt._id) : null;
+  })();
+  const canCall: boolean = (() => {
+    if (!activeRoom || !isRecord(activeRoom)) return false;
+    if (activeRoom.isLocked) return false;
+    const appt = isRecord(activeRoom.appointment) ? activeRoom.appointment : null;
+    if (!appt) return false;
+    const status = String(appt.status ?? '');
+    return status === 'CONFIRMED' || status === 'IN_PROGRESS';
+  })();
+
   const messages = messagesQuery.data?.items ?? [];
   const rows = useMemo(() => withDateSeparators(messages), [messages]);
 
@@ -186,6 +206,36 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
         <title>{title} — MRD Online Clinic</title>
         <meta name="robots" content="noindex" />
       </Helmet>
+
+      {/* Call Overlays */}
+      {agoraCall.callState === 'outgoing' ? (
+        <OutgoingCallOverlay
+          calleeName={displayName(other)}
+          callType={agoraCall.callType}
+          onEnd={() => void agoraCall.endCall()}
+        />
+      ) : null}
+      {agoraCall.callState === 'incoming' && agoraCall.incomingCall ? (
+        <IncomingCallOverlay
+          data={agoraCall.incomingCall}
+          onAccept={() => void agoraCall.acceptCall()}
+          onReject={() => void agoraCall.rejectIncoming()}
+        />
+      ) : null}
+      {agoraCall.callState === 'active' ? (
+        <ActiveCallOverlay
+          callType={agoraCall.callType}
+          otherName={displayName(other)}
+          duration={agoraCall.callDuration}
+          isMuted={agoraCall.isMuted}
+          isCameraOff={agoraCall.isCameraOff}
+          localVideoTrack={agoraCall.localVideoTrack}
+          remoteUsers={agoraCall.remoteUsers}
+          onToggleMute={() => void agoraCall.toggleMute()}
+          onToggleCamera={() => void agoraCall.toggleCamera()}
+          onEnd={() => void agoraCall.endCall()}
+        />
+      ) : null}
 
       <div className="flex h-[calc(100dvh-120px)] min-h-[440px] flex-col overflow-hidden rounded-[20px] border border-[#e2e8f0] bg-[#f8fafc] shadow-[0_8px_40px_rgba(15,23,42,0.06)] md:h-[calc(100dvh-132px)]">
         <div className="flex min-h-0 flex-1 divide-x divide-[#e2e8f0]">
@@ -365,9 +415,30 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                       {isLocked ? 'Read-only · visit completed' : 'Secure care messaging'}
                     </p>
                   </div>
-                  <Button type="button" variant="ghost" size="icon" className="shrink-0 text-[#64748b]" aria-label="More">
-                    <MoreHorizontal className="h-5 w-5" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-11 w-11 shrink-0 text-[#0a1628] hover:bg-sky-50 hover:text-sky-700 disabled:opacity-40"
+                      aria-label="Voice call"
+                      disabled={!canCall || agoraCall.callState !== 'idle'}
+                      onClick={() => activeApptId && agoraCall.initiateCall('audio', activeApptId)}
+                    >
+                      <Phone className="h-9 w-9" strokeWidth={1.8} />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-11 w-11 shrink-0 text-[#0a1628] hover:bg-sky-50 hover:text-sky-700 disabled:opacity-40"
+                      aria-label="Video call"
+                      disabled={!canCall || agoraCall.callState !== 'idle'}
+                      onClick={() => activeApptId && agoraCall.initiateCall('video', activeApptId)}
+                    >
+                      <Video className="h-9 w-9" strokeWidth={1.8} />
+                    </Button>
+                  </div>
                 </header>
 
                 <div className="min-h-0 flex-1 overflow-y-auto bg-[#f4f7fb] px-3 py-4 sm:px-5">
@@ -652,7 +723,6 @@ function ChatComposer({
   onSendText: (text: string) => void;
   onSent: () => Promise<void>;
 }) {
-  const qc = useQueryClient();
   const [draft, setDraft] = useState('');
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null);
   const [uploading, setUploading] = useState(false);
