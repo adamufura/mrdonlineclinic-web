@@ -462,7 +462,7 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                         );
                       }
                       const m = row.m;
-                      const mine = myId && senderId(m) === myId;
+                      const mine = Boolean(myId && senderId(m) === myId);
                       const t = m.createdAt ? format(new Date(String(m.createdAt)), 'h:mm a') : '';
                       const body = typeof m.content === 'string' ? m.content : '';
                       const msgType = typeof m.messageType === 'string' ? m.messageType : 'TEXT';
