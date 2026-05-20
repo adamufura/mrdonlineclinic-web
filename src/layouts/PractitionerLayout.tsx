@@ -19,6 +19,8 @@ import {
   X,
 } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { BrandMark } from '@/components/brand/BrandMark';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { HeaderProfileMenu } from '@/components/shared/header-profile-menu';
@@ -95,6 +97,7 @@ function SidebarNav({
   onNavigate?: () => void;
   pendingAppointments: number;
 }) {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const publicProfileTo = user?.id ? ROUTES.findDoctorProfile(user.id) : ROUTES.findDoctor;
 
@@ -110,59 +113,59 @@ function SidebarNav({
           </Link>
         </div>
 
-        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">Practice</p>
+        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">{t('nav.practice')}</p>
         <nav className="flex flex-col gap-0.5">
           <NavRow
             to={ROUTES.practitioner.dashboard}
-            label="Dashboard"
+            label={t('nav.dashboard')}
             icon={LayoutDashboard}
             onNavigate={onNavigate}
             end
           />
           <NavRow
             to={ROUTES.practitioner.appointments}
-            label="Appointments"
+            label={t('nav.appointments')}
             icon={Calendar}
             onNavigate={onNavigate}
             badge={pendingAppointments}
           />
           <NavRow
             to={ROUTES.practitioner.availability}
-            label="Availability"
+            label={t('nav.availability')}
             icon={Clock}
             onNavigate={onNavigate}
           />
-          <NavRow to={ROUTES.practitioner.messages} label="Messages" icon={MessageSquare} onNavigate={onNavigate} />
-          <NavRow to={ROUTES.practitioner.patients} label="Patients" icon={Users} onNavigate={onNavigate} />
+          <NavRow to={ROUTES.practitioner.messages} label={t('nav.messages')} icon={MessageSquare} onNavigate={onNavigate} />
+          <NavRow to={ROUTES.practitioner.patients} label={t('nav.patients')} icon={Users} onNavigate={onNavigate} />
         </nav>
       </div>
 
       <div className="px-2 pb-2">
-        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">Records</p>
+        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">{t('nav.records')}</p>
         <nav className="flex flex-col gap-0.5">
           <NavRow
             to={ROUTES.practitioner.prescriptions}
-            label="Prescriptions"
+            label={t('nav.prescriptions')}
             icon={FileText}
             onNavigate={onNavigate}
           />
-          <NavRow to={publicProfileTo} label="Reviews" icon={Award} onNavigate={onNavigate} dot />
+          <NavRow to={publicProfileTo} label={t('nav.reviews')} icon={Award} onNavigate={onNavigate} dot />
         </nav>
       </div>
 
       <div className="px-2 pb-2">
-        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">Account</p>
+        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">{t('nav.account')}</p>
         <nav className="flex flex-col gap-0.5">
           <NavRow
             to={ROUTES.practitioner.profile}
-            label="My account"
+            label={t('nav.myAccount')}
             icon={UserCircle}
             onNavigate={onNavigate}
             end
           />
           <NavRow
             to={ROUTES.practitioner.profileCredentials}
-            label="Credentials"
+            label={t('nav.credentials')}
             icon={ShieldCheck}
             onNavigate={onNavigate}
           />
@@ -185,6 +188,7 @@ function SidebarChrome({
   photoUrl?: string;
   onRequestLogout: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="mt-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
       <div className="flex gap-2.5">
@@ -214,7 +218,7 @@ function SidebarChrome({
             className="mt-2 h-8 w-full justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[12px] font-medium text-white/85 hover:bg-white/10 hover:text-white"
             onClick={onRequestLogout}
           >
-            Log out
+            {t('common.logout')}
           </Button>
         </div>
       </div>
@@ -226,6 +230,7 @@ const sidebarShell =
   'relative flex h-dvh w-[260px] shrink-0 flex-col gap-2 overflow-y-auto bg-gradient-to-b from-[#04132a] to-[#0a2545] px-[18px] pb-6 pt-6 before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_60%_30%_at_50%_0%,rgba(56,189,248,0.15),transparent_70%),radial-gradient(ellipse_50%_30%_at_50%_100%,rgba(94,234,212,0.1),transparent_70%)]';
 
 function PractitionerLayoutInner() {
+  const { t } = useTranslation();
   const { openSlotManager } = usePractitionerSlotManager();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
@@ -368,7 +373,7 @@ function PractitionerLayoutInner() {
             <Input
               ref={searchRef}
               type="search"
-              placeholder="Search patients, appointments, or notes…"
+              placeholder={t('layout.searchPlaceholder')}
               className="h-9 border-[#e2e8f0] bg-[#eef1f6] pl-9 pr-14 text-[13px] shadow-none focus-visible:border-teal-500 focus-visible:bg-white focus-visible:ring-teal-500/20"
             />
             <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-[#e2e8f0] bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline-block">
@@ -377,6 +382,7 @@ function PractitionerLayoutInner() {
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            <LanguageSwitcher />
             <button
               type="button"
               className="relative grid h-9 w-9 place-items-center rounded-[9px] text-muted-foreground transition-colors hover:bg-[#eef1f6] hover:text-foreground"
@@ -399,7 +405,7 @@ function PractitionerLayoutInner() {
               title="Add visit availability"
             >
               <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
-              <span className="hidden sm:inline">Create slot</span>
+              <span className="hidden sm:inline">{t('layout.createSlot')}</span>
             </Button>
             <HeaderProfileMenu
               displayName={displayName}

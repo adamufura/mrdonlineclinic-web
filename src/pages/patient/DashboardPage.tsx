@@ -17,7 +17,9 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { timeGreeting } from '@/lib/i18n/greeting';
 import { Button } from '@/components/ui/button';
 import { listNotifications } from '@/features/notifications/api';
 import { listPatientAppointments, listPatientPrescriptions } from '@/features/patients/api';
@@ -27,13 +29,6 @@ import { cn } from '@/lib/utils/cn';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
-}
-
-function greetingLabel(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
 }
 
 function useNowEverySecond(enabled: boolean) {
@@ -65,11 +60,12 @@ function practitionerShort(rx: Record<string, unknown>): string {
   return n ? `Dr. ${n}` : 'Your clinician';
 }
 
-function statusPillClass(status: string): { label: string; className: string } {
+function statusPillClass(status: string, t: (key: string) => string): { label: string; className: string } {
   const s = status.toUpperCase();
   if (s === 'CONFIRMED')
-    return { label: 'Confirmed', className: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200/80' };
-  if (s === 'PENDING') return { label: 'Pending', className: 'bg-amber-100 text-amber-900 ring-1 ring-amber-200/80' };
+    return { label: t('patient.dashboard.statusConfirmed'), className: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200/80' };
+  if (s === 'PENDING')
+    return { label: t('patient.dashboard.statusPending'), className: 'bg-amber-100 text-amber-900 ring-1 ring-amber-200/80' };
   return {
     label: s.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase()),
     className: 'bg-slate-100 text-slate-700 ring-1 ring-slate-200/80',
@@ -77,6 +73,7 @@ function statusPillClass(status: string): { label: string; className: string } {
 }
 
 export default function PatientDashboardPage() {
+  const { t } = useTranslation();
   const authUser = useAuthStore((s) => s.user);
   const monthAnchor = new Date();
 
@@ -206,12 +203,15 @@ export default function PatientDashboardPage() {
   const visitTitle =
     next && typeof next.reasonForVisit === 'string' && next.reasonForVisit.trim()
       ? String(next.reasonForVisit)
-      : 'Upcoming visit';
+      : t('patient.dashboard.upcomingVisit');
 
   const subline =
     nextStart && prName
-      ? `Your next visit is ${formatDistanceToNowStrict(nextStart, { addSuffix: true })}. Dr. ${prName} is your clinician.`
-      : 'Book a visit when you are ready — your care team is a tap away.';
+      ? t('patient.dashboard.sublineNext', {
+          when: formatDistanceToNowStrict(nextStart, { addSuffix: true }),
+          name: prName,
+        })
+      : t('patient.dashboard.sublineBook');
 
   const upcomingPreview = upcoming.slice(0, 3) as Record<string, unknown>[];
   const rxItems = (prescriptions.data?.items ?? []).slice(0, 3);
@@ -219,7 +219,7 @@ export default function PatientDashboardPage() {
   return (
     <>
       <Helmet>
-        <title>Patient dashboard — MRD Online Clinic</title>
+        <title>{t('patient.dashboard.title')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -231,7 +231,8 @@ export default function PatientDashboardPage() {
               {format(now, 'EEEE, MMM d')}
             </p>
             <h1 className="font-display text-3xl font-normal tracking-tight text-[#0a1628] sm:text-[38px] sm:leading-[1.1]">
-              {greetingLabel()}, <em className="font-medium not-italic text-sky-800">{authUser?.firstName}</em>
+              {timeGreeting(t)},{' '}
+              <em className="font-medium not-italic text-sky-800">{authUser?.firstName}</em>
             </h1>
             <p className="mt-2 max-w-xl text-sm text-[#64748b]">{subline}</p>
           </div>
@@ -241,14 +242,14 @@ export default function PatientDashboardPage() {
               <span className="text-[#0a1628]">
                 <span className="font-semibold tabular-nums">72</span> bpm
               </span>
-              <span className="hidden text-xs text-muted-foreground sm:inline">· demo</span>
+              <span className="hidden text-xs text-muted-foreground sm:inline">{t('patient.dashboard.demo')}</span>
             </span>
             <Link
               to={ROUTES.patient.profileMedical}
               className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-800 hover:underline"
             >
               <Shield className="h-3.5 w-3.5" />
-              Update health profile
+              {t('patient.dashboard.updateHealthProfile')}
             </Link>
           </div>
         </div>
@@ -256,48 +257,50 @@ export default function PatientDashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             className="blue"
-            label="Upcoming visits"
+            label={t('patient.dashboard.upcomingVisits')}
             value={upcomingCount}
             meta={
               nextStart
-                ? `Next: ${format(nextStart, 'EEE')}, ${format(nextStart, 'h:mm a')}`
-                : 'Nothing scheduled'
+                ? t('patient.dashboard.nextVisit', {
+                    when: `${format(nextStart, 'EEE')}, ${format(nextStart, 'h:mm a')}`,
+                  })
+                : t('patient.dashboard.nothingScheduled')
             }
           />
           <StatCard
             className="mint"
-            label="Visits completed"
+            label={t('patient.dashboard.visitsCompleted')}
             value={completedTotalQ.isPending ? '…' : completedTotal}
             meta={
               completedThisMonth > 0
-                ? `+${completedThisMonth} this month`
+                ? t('patient.dashboard.plusThisMonth', { count: completedThisMonth })
                 : completedTotal > 0
-                  ? 'Across your history'
-                  : 'After your first visit'
+                  ? t('patient.dashboard.acrossHistory')
+                  : t('patient.dashboard.afterFirstVisit')
             }
           />
           <StatCard
             className="coral"
-            label="Active prescriptions"
+            label={t('patient.dashboard.activePrescriptions')}
             value={rxTotal}
-            meta={rxTotal > 0 ? 'Issued by your clinicians' : 'None on file yet'}
+            meta={rxTotal > 0 ? t('patient.dashboard.issuedByClinicians') : t('patient.dashboard.noneOnFile')}
           />
           <StatCard
             className="warm"
-            label="Unread messages"
+            label={t('patient.dashboard.unreadMessages')}
             value={unreadNotifications.isPending ? '…' : unreadNotifications.isError ? '—' : unreadTotal}
             meta={
               <span className="inline-flex flex-wrap items-center gap-x-1">
                 <span>
                   {unreadNotifications.isError
-                    ? 'Could not load count'
+                    ? t('patient.dashboard.couldNotLoadCount')
                     : unreadTotal > 0
-                      ? 'Notifications & updates'
-                      : 'Nothing new'}
+                      ? t('patient.dashboard.notificationsUpdates')
+                      : t('patient.dashboard.nothingNew')}
                 </span>
                 <span className="text-[#94a3b8]">·</span>
                 <Link to={ROUTES.patient.messages} className="font-medium text-sky-800 hover:underline">
-                  Open inbox
+                  {t('patient.dashboard.openInbox')}
                 </Link>
               </span>
             }
@@ -305,10 +308,10 @@ export default function PatientDashboardPage() {
         </div>
 
         {dashApptLoading ? (
-          <p className="text-sm text-muted-foreground">Loading your dashboard…</p>
+          <p className="text-sm text-muted-foreground">{t('patient.dashboard.loadingDashboard')}</p>
         ) : null}
         {dashApptError ? (
-          <p className="text-sm text-destructive">Could not load appointments. Try again shortly.</p>
+          <p className="text-sm text-destructive">{t('patient.dashboard.couldNotLoadAppts')}</p>
         ) : null}
 
         {next && nextStart ? (
@@ -322,12 +325,12 @@ export default function PatientDashboardPage() {
               <div className="min-w-0 flex-1 space-y-5">
                 <p className="inline-flex items-center gap-2 rounded-full border border-teal-300/25 bg-teal-300/12 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-teal-200">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-300" />
-                  Next appointment · today
+                  {t('patient.dashboard.nextApptToday')}
                 </p>
                 <div>
                   <h2 className="font-display text-2xl font-normal tracking-tight sm:text-[26px]">{visitTitle}</h2>
                   <p className="mt-2 text-[13px] text-white/65">
-                    {format(nextStart, 'EEEE, MMM d')} · {format(nextStart, 'h:mm a')} · Video visit ·{' '}
+                    {format(nextStart, 'EEEE, MMM d')} · {format(nextStart, 'h:mm a')} · {t('patient.dashboard.videoVisit')} ·{' '}
                     <span className="capitalize">{String(next.status ?? '').toLowerCase().replace('_', ' ')}</span>
                   </p>
                 </div>
@@ -339,7 +342,7 @@ export default function PatientDashboardPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-medium">Dr. {prName}</p>
-                      <p className="text-xs text-white/55">General Practitioner · Your clinician</p>
+                      <p className="text-xs text-white/55">{t('patient.dashboard.generalPractitioner')}</p>
                     </div>
                   </div>
                 ) : null}
@@ -351,7 +354,7 @@ export default function PatientDashboardPage() {
                   >
                     <Link to={ROUTES.patient.appointment(String(next._id))}>
                       <Play className="h-4 w-4 fill-current" />
-                      Join visit
+                      {t('patient.dashboard.joinVisit')}
                     </Link>
                   </Button>
                   <Button
@@ -361,7 +364,9 @@ export default function PatientDashboardPage() {
                   >
                     <Link to={ROUTES.patient.messages}>
                       <Send className="h-4 w-4" />
-                      {prName ? `Message Dr. ${prName.split(/\s+/)[0]}` : 'Message care team'}
+                      {prName
+                        ? t('patient.dashboard.messageDr', { name: prName.split(/\s+/)[0] })
+                        : t('patient.dashboard.messageCareTeam')}
                     </Link>
                   </Button>
                   <Button
@@ -371,7 +376,7 @@ export default function PatientDashboardPage() {
                   >
                     <Link to={ROUTES.patient.appointment(String(next._id))}>
                       <Calendar className="h-4 w-4" />
-                      Reschedule
+                      {t('patient.dashboard.reschedule')}
                     </Link>
                   </Button>
                 </div>
@@ -379,7 +384,7 @@ export default function PatientDashboardPage() {
 
               {countdown ? (
                 <div className="shrink-0 rounded-2xl border border-white/10 bg-black/20 px-6 py-5 text-center backdrop-blur-sm">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-teal-200/90">Starts in</p>
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-teal-200/90">{t('patient.dashboard.startsIn')}</p>
                   <div className="mt-3 flex items-center justify-center gap-1 font-mono text-3xl font-semibold tabular-nums tracking-tight">
                     <span>{String(countdown.h).padStart(2, '0')}</span>
                     <span className="text-white/40">:</span>
@@ -388,9 +393,9 @@ export default function PatientDashboardPage() {
                     <span>{String(countdown.s).padStart(2, '0')}</span>
                   </div>
                   <div className="mt-2 flex justify-center gap-6 text-[10px] font-medium uppercase tracking-wide text-white/45">
-                    <span>hours</span>
-                    <span>mins</span>
-                    <span>secs</span>
+                    <span>{t('patient.dashboard.hours')}</span>
+                    <span>{t('patient.dashboard.mins')}</span>
+                    <span>{t('patient.dashboard.secs')}</span>
                   </div>
                 </div>
               ) : null}
@@ -398,10 +403,10 @@ export default function PatientDashboardPage() {
           </section>
         ) : dashApptReady ? (
           <section className="rounded-2xl border border-border bg-white p-8 text-center shadow-sm">
-            <p className="font-display text-lg text-[#0a1628]">No upcoming visits</p>
-            <p className="mt-2 text-sm text-muted-foreground">When you book, your next visit will appear here.</p>
+            <p className="font-display text-lg text-[#0a1628]">{t('patient.dashboard.noUpcomingTitle')}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t('patient.dashboard.noUpcomingHint')}</p>
             <Button asChild className="mt-6" size="lg">
-              <Link to={ROUTES.patient.findDoctor}>Find a doctor</Link>
+              <Link to={ROUTES.patient.findDoctor}>{t('patient.dashboard.findDoctor')}</Link>
             </Button>
           </section>
         ) : null}
@@ -412,15 +417,16 @@ export default function PatientDashboardPage() {
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
-                    Upcoming <em className="not-italic text-sky-800">visits</em>
+                    {t('patient.dashboard.upcomingVisitsTitle')}{' '}
+                    <em className="not-italic text-sky-800">{t('patient.dashboard.upcomingVisitsEm')}</em>
                   </h2>
-                  <p className="mt-1 text-xs text-[#64748b]">Your next scheduled appointments</p>
+                  <p className="mt-1 text-xs text-[#64748b]">{t('patient.dashboard.upcomingVisitsHint')}</p>
                 </div>
                 <Link
                   to={ROUTES.patient.appointments}
                   className="inline-flex items-center gap-1 text-xs font-medium text-sky-800 hover:underline"
                 >
-                  View all
+                  {t('common.viewAll')}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -434,9 +440,9 @@ export default function PatientDashboardPage() {
                     const reason =
                       typeof a.reasonForVisit === 'string' && a.reasonForVisit.trim()
                         ? String(a.reasonForVisit)
-                        : 'Visit';
+                        : t('common.visit');
                     const status = String(a.status ?? '');
-                    const pill = statusPillClass(status);
+                    const pill = statusPillClass(status, t);
                     const dateTint =
                       i === 0 ? 'from-teal-200 to-teal-500 text-[#04132a]' : i === 1 ? 'from-slate-200 to-slate-400 text-[#04132a]' : 'from-amber-200 to-amber-400 text-[#04132a]';
                     return (
@@ -455,9 +461,9 @@ export default function PatientDashboardPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-[#0a1628]">
-                            {dr ? `Dr. ${dr}` : 'Clinician'} · {reason}
+                            {dr ? `Dr. ${dr}` : t('patient.dashboard.clinician')} · {reason}
                           </p>
-                          <p className="text-xs text-[#64748b]">Scheduled visit</p>
+                          <p className="text-xs text-[#64748b]">{t('patient.dashboard.scheduledVisit')}</p>
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
                           <span className="text-xs font-medium tabular-nums text-[#64748b]">{format(st, 'h:mm a')}</span>
@@ -470,7 +476,7 @@ export default function PatientDashboardPage() {
                   })}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No upcoming visits. Book from Find a doctor.</p>
+                <p className="text-sm text-muted-foreground">{t('patient.dashboard.noUpcomingList')}</p>
               )}
             </section>
 
@@ -478,20 +484,23 @@ export default function PatientDashboardPage() {
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
-                    Recent <em className="not-italic text-sky-800">prescriptions</em>
+                    {t('patient.dashboard.recentPrescriptions')}{' '}
+                    <em className="not-italic text-sky-800">{t('patient.dashboard.recentPrescriptionsEm')}</em>
                   </h2>
-                  <p className="mt-1 text-xs text-[#64748b]">Download or refill from one place</p>
+                  <p className="mt-1 text-xs text-[#64748b]">{t('patient.dashboard.recentPrescriptionsHint')}</p>
                 </div>
                 <Link
                   to={ROUTES.patient.prescriptions}
                   className="inline-flex items-center gap-1 text-xs font-medium text-sky-800 hover:underline"
                 >
-                  All prescriptions
+                  {t('patient.dashboard.allPrescriptions')}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
-              {prescriptions.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
-              {prescriptions.isError ? <p className="text-sm text-destructive">Could not load prescriptions.</p> : null}
+              {prescriptions.isLoading ? <p className="text-sm text-muted-foreground">{t('common.loading')}</p> : null}
+              {prescriptions.isError ? (
+                <p className="text-sm text-destructive">{t('patient.prescriptions.couldNotLoad')}</p>
+              ) : null}
               {rxItems.length ? (
                 <ul className="space-y-2">
                   {rxItems.map((rx: unknown, i: number) => {
@@ -514,7 +523,7 @@ export default function PatientDashboardPage() {
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-[#0a1628]">{firstMedicationLine(rx)}</p>
                           <p className="text-xs text-[#64748b]">
-                            {practitionerShort(rx)} · Issued {issued}
+                            {practitionerShort(rx)} · {t('patient.dashboard.issued', { date: issued })}
                             {duration ? ` · ${duration}` : ''}
                           </p>
                           {num ? <p className="mt-1 font-mono text-[11px] text-[#94a3b8]">{num}</p> : null}
@@ -537,22 +546,22 @@ export default function PatientDashboardPage() {
                   })}
                 </ul>
               ) : !prescriptions.isLoading ? (
-                <p className="text-sm text-muted-foreground">No prescriptions yet.</p>
+                <p className="text-sm text-muted-foreground">{t('patient.dashboard.noPrescriptions')}</p>
               ) : null}
             </section>
 
             <section className="rounded-[18px] border border-dashed border-[#c5d5eb] bg-white/80 p-5">
-              <h2 className="font-display text-lg font-medium text-[#0a1628]">Your records</h2>
-              <p className="mt-1 text-xs text-[#64748b]">Prescriptions, visits, and medical info in one place.</p>
+              <h2 className="font-display text-lg font-medium text-[#0a1628]">{t('patient.dashboard.yourRecords')}</h2>
+              <p className="mt-1 text-xs text-[#64748b]">{t('patient.dashboard.yourRecordsHint')}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button asChild variant="outline" size="sm">
-                  <Link to={ROUTES.patient.prescriptions}>Prescriptions</Link>
+                  <Link to={ROUTES.patient.prescriptions}>{t('nav.prescriptions')}</Link>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <Link to={ROUTES.patient.appointments}>Appointments</Link>
+                  <Link to={ROUTES.patient.appointments}>{t('nav.appointments')}</Link>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <Link to={ROUTES.patient.profileMedical}>Medical info</Link>
+                  <Link to={ROUTES.patient.profileMedical}>{t('patient.dashboard.medicalInfo')}</Link>
                 </Button>
               </div>
             </section>
@@ -562,15 +571,16 @@ export default function PatientDashboardPage() {
             <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
               <div className="mb-4">
                 <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
-                  Today&apos;s <em className="not-italic text-sky-800">vitals</em>
+                  {t('patient.dashboard.todaysVitals')}{' '}
+                  <em className="not-italic text-sky-800">{t('patient.dashboard.todaysVitalsEm')}</em>
                 </h2>
-                <p className="mt-1 text-xs text-[#64748b]">Sample dashboard · connect devices in a future release</p>
+                <p className="mt-1 text-xs text-[#64748b]">{t('patient.dashboard.vitalsDemo')}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <VitalMini icon={Heart} iconClass="text-rose-500" label="Heart rate" value="72" unit="bpm" bars={[30, 50, 70, 60, 80, 75, 65]} />
-                <VitalMini icon={Droplets} iconClass="text-sky-500" label="Blood pressure" value="118/76" bars={[50, 45, 55, 60, 50, 65, 58]} />
-                <VitalMini icon={Activity} iconClass="text-teal-500" label="Activity" value="6.4k" unit="steps" bars={[40, 65, 70, 90, 55, 75, 85]} />
-                <VitalMini icon={Moon} iconClass="text-violet-500" label="Sleep" value="7h 42" unit="m" bars={[60, 80, 50, 75, 90, 85, 80]} />
+                <VitalMini icon={Heart} iconClass="text-rose-500" label={t('patient.dashboard.heartRate')} value="72" unit="bpm" bars={[30, 50, 70, 60, 80, 75, 65]} />
+                <VitalMini icon={Droplets} iconClass="text-sky-500" label={t('patient.dashboard.bloodPressure')} value="118/76" bars={[50, 45, 55, 60, 50, 65, 58]} />
+                <VitalMini icon={Activity} iconClass="text-teal-500" label={t('patient.dashboard.activity')} value="6.4k" unit="steps" bars={[40, 65, 70, 90, 55, 75, 85]} />
+                <VitalMini icon={Moon} iconClass="text-violet-500" label={t('patient.dashboard.sleep')} value="7h 42" unit="m" bars={[60, 80, 50, 75, 90, 85, 80]} />
               </div>
             </section>
 
@@ -578,22 +588,23 @@ export default function PatientDashboardPage() {
               <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
-                    Recent <em className="not-italic text-sky-800">messages</em>
+                    {t('patient.dashboard.recentMessages')}{' '}
+                    <em className="not-italic text-sky-800">{t('patient.dashboard.recentMessagesEm')}</em>
                   </h2>
-                  <p className="mt-1 text-xs text-[#64748b]">Chat with your care team after visits are booked</p>
+                  <p className="mt-1 text-xs text-[#64748b]">{t('patient.dashboard.recentMessagesHint')}</p>
                 </div>
                 <Link
                   to={ROUTES.patient.messages}
                   className="inline-flex items-center gap-1 text-xs font-medium text-sky-800 hover:underline"
                 >
-                  Open inbox
+                  {t('patient.dashboard.openInbox')}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
               <ul className="space-y-2">
                 {[
-                  { name: 'Care team', preview: 'Message your clinicians from the inbox.', tone: 'from-sky-400 to-sky-600', unread: 0 },
-                  { name: 'Appointments', preview: 'Confirmations and reminders appear here.', tone: 'from-teal-400 to-teal-600', unread: 0 },
+                  { name: t('patient.dashboard.careTeam'), preview: t('patient.dashboard.careTeamPreview'), tone: 'from-sky-400 to-sky-600', unread: 0 },
+                  { name: t('patient.dashboard.appointmentsPreview'), preview: t('patient.dashboard.appointmentsPreviewText'), tone: 'from-teal-400 to-teal-600', unread: 0 },
                 ].map((row) => (
                   <li key={row.name} className="flex gap-3 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3">
                     <div
@@ -614,14 +625,14 @@ export default function PatientDashboardPage() {
             </section>
 
             <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
-              <h2 className="font-display text-lg font-medium text-[#0a1628]">Tasks &amp; notes</h2>
-              <p className="mt-2 text-sm text-[#64748b]">No tasks yet. After your next visit, follow-ups may appear here.</p>
+              <h2 className="font-display text-lg font-medium text-[#0a1628]">{t('patient.dashboard.tasksNotes')}</h2>
+              <p className="mt-2 text-sm text-[#64748b]">{t('patient.dashboard.noTasks')}</p>
             </section>
           </div>
         </div>
 
         <p className="text-center text-[11px] text-muted-foreground">
-          {apptTotal} appointments on file · Vitals shown are illustrative
+          {t('patient.dashboard.footer', { count: apptTotal })}
         </p>
       </div>
     </>

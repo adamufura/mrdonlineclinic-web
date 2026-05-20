@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Loader2, Mail, Phone, Search, UserRound, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ const AVATAR_TONES = [
 ] as const;
 
 export default function PractitionerPatientsPage() {
+  const { t } = useTranslation();
   const [q, setQ] = useState('');
 
   const patients = useQuery({
@@ -56,10 +58,12 @@ export default function PractitionerPatientsPage() {
     });
   }, [patients.data, q]);
 
+  const total = patients.data?.length ?? 0;
+
   return (
     <>
       <Helmet>
-        <title>Patients — MRD Online Clinic</title>
+        <title>{t('practitioner.patients.title')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -68,18 +72,16 @@ export default function PractitionerPatientsPage() {
           <div>
             <p className="mb-2 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-[#64748b]">
               <Users className="size-3.5 text-teal-600" aria-hidden />
-              Practice
+              {t('practitioner.patients.badge')}
             </p>
-            <h1 className="font-display text-3xl font-normal tracking-tight text-[#0a1628]">Patients</h1>
-            <p className="mt-2 max-w-2xl text-sm text-[#64748b]">
-              Everyone you&apos;ve seen or have on your schedule — one row per patient, sorted by most recent
-              appointment.
-            </p>
+            <h1 className="font-display text-3xl font-normal tracking-tight text-[#0a1628]">
+              {t('practitioner.patients.heading')}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-[#64748b]">{t('practitioner.patients.description')}</p>
           </div>
           {patients.isSuccess ? (
-            <p className="text-sm text-[#64748b]">
-              <span className="font-semibold text-[#0a1628]">{patients.data?.length ?? 0}</span> patient
-              {(patients.data?.length ?? 0) === 1 ? '' : 's'}
+            <p className="text-sm font-semibold text-[#0a1628]">
+              {t('practitioner.patients.count', { count: total })}
             </p>
           ) : null}
         </div>
@@ -90,122 +92,89 @@ export default function PractitionerPatientsPage() {
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name, email, or phone…"
+            placeholder={t('practitioner.patients.searchPlaceholder')}
             className="h-10 border-[#e2e8f0] bg-white pl-9 pr-3 text-sm shadow-sm focus-visible:border-teal-500 focus-visible:ring-teal-500/20"
-            aria-label="Filter patients"
+            aria-label={t('practitioner.patients.filterLabel')}
           />
         </div>
 
         <section className="overflow-hidden rounded-[18px] border border-[#e2e8f0] bg-white shadow-sm">
           {patients.isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-20 text-[#64748b]">
-              <Loader2 className="size-5 animate-spin text-teal-600" aria-hidden />
-              Loading patients…
+            <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              {t('practitioner.patients.loading')}
             </div>
           ) : null}
           {patients.isError ? (
-            <p className="p-8 text-sm text-destructive">Could not load your patient list. Try again shortly.</p>
+            <p className="py-12 text-center text-sm text-destructive">{t('practitioner.patients.couldNotLoad')}</p>
           ) : null}
 
           {patients.isSuccess && filtered.length === 0 ? (
-            <div className="flex flex-col items-center px-6 py-16 text-center">
-              <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#f1f5f9] text-[#64748b]">
-                <UserRound className="size-7" strokeWidth={1.5} />
-              </div>
-              <p className="font-display text-lg font-medium text-[#0a1628]">
-                {q.trim() ? 'No matches' : 'No patients yet'}
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <UserRound className="size-10 text-[#94a3b8]" strokeWidth={1.5} />
+              <p className="text-sm text-[#64748b]">
+                {q.trim() ? t('practitioner.patients.empty') : t('practitioner.patients.noPatients')}
               </p>
-              <p className="mt-2 max-w-sm text-sm text-[#64748b]">
-                {q.trim()
-                  ? 'Try a different search term.'
-                  : 'When patients book or you confirm visits, they will appear here automatically.'}
-              </p>
-              {!q.trim() ? (
-                <Button asChild className="mt-6 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 text-white shadow-sm hover:from-teal-600 hover:to-teal-800">
-                  <Link to={ROUTES.practitioner.appointments}>View appointments</Link>
-                </Button>
-              ) : null}
             </div>
           ) : null}
 
-          {patients.isSuccess && filtered.length > 0 ? (
+          {filtered.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
-                  <tr className="border-b border-[#e2e8f0] bg-[#fafbfc] text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">
-                    <th className="px-4 py-3 font-medium sm:px-6">Patient</th>
-                    <th className="hidden px-4 py-3 font-medium sm:table-cell sm:px-6">Email</th>
-                    <th className="hidden px-4 py-3 font-medium md:table-cell sm:px-6">Phone</th>
-                    <th className="px-4 py-3 font-medium sm:px-6">Last appointment</th>
-                    <th className="px-4 py-3 text-right font-medium sm:px-6"> </th>
+                  <tr className="border-b border-[#e2e8f0] bg-[#f8fafc] text-xs font-medium uppercase tracking-wide text-[#64748b]">
+                    <th className="px-5 py-3">{t('practitioner.patients.colPatient')}</th>
+                    <th className="px-5 py-3">{t('practitioner.patients.colEmail')}</th>
+                    <th className="px-5 py-3">{t('practitioner.patients.colPhone')}</th>
+                    <th className="px-5 py-3">{t('practitioner.patients.colLastAppt')}</th>
+                    <th className="px-5 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#eef1f6]">
                   {filtered.map((raw, idx) => {
-                    if (!isRecord(raw) || raw._id == null) return null;
-                    const id = String(raw._id);
+                    if (!isRecord(raw)) return null;
                     const name = displayName(raw);
-                    const email = typeof raw.email === 'string' ? raw.email.trim() : '';
-                    const phone = typeof raw.phoneNumber === 'string' ? raw.phoneNumber.trim() : '';
-                    const lastRaw = raw.lastAppointmentAt;
-                    const last =
-                      lastRaw != null && (typeof lastRaw === 'string' || lastRaw instanceof Date)
-                        ? new Date(String(lastRaw))
-                        : null;
-                    const tone = AVATAR_TONES[idx % AVATAR_TONES.length];
+                    const email = typeof raw.email === 'string' ? raw.email : '—';
+                    const phone = typeof raw.phoneNumber === 'string' ? raw.phoneNumber : '—';
+                    const lastAppt = raw.lastAppointmentAt
+                      ? format(new Date(String(raw.lastAppointmentAt)), 'MMM d, yyyy · h:mm a')
+                      : '—';
+                    const roomId = typeof raw.chatRoomId === 'string' ? raw.chatRoomId : null;
 
                     return (
-                      <tr key={id} className="transition-colors hover:bg-[#f8fafc]/90">
-                        <td className="px-4 py-4 sm:px-6">
+                      <tr key={String(raw._id ?? idx)} className="transition-colors hover:bg-[#f8fafc]">
+                        <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             <div
                               className={cn(
-                                'flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xs font-bold text-white shadow-sm',
-                                tone,
+                                'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xs font-semibold text-white',
+                                AVATAR_TONES[idx % AVATAR_TONES.length],
                               )}
                             >
                               {initials(name)}
                             </div>
-                            <div className="min-w-0">
-                              <p className="font-semibold text-[#0a1628]">{name}</p>
-                              <p className="mt-0.5 truncate text-xs text-[#64748b] sm:hidden">{email || '—'}</p>
-                            </div>
+                            <span className="font-medium text-[#0a1628]">{name}</span>
                           </div>
                         </td>
-                        <td className="hidden px-4 py-4 sm:table-cell sm:px-6">
-                          {email ? (
-                            <a
-                              href={`mailto:${email}`}
-                              className="inline-flex items-center gap-1.5 text-teal-800 hover:underline"
-                            >
-                              <Mail className="size-3.5 shrink-0 text-[#94a3b8]" aria-hidden />
-                              <span className="truncate">{email}</span>
-                            </a>
-                          ) : (
-                            <span className="text-[#94a3b8]">—</span>
-                          )}
+                        <td className="px-5 py-4 text-[#475569]">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Mail className="size-3.5 text-[#94a3b8]" />
+                            {email}
+                          </span>
                         </td>
-                        <td className="hidden px-4 py-4 md:table-cell sm:px-6">
-                          {phone ? (
-                            <a href={`tel:${phone}`} className="inline-flex items-center gap-1.5 tabular-nums text-[#475569] hover:text-[#0a1628]">
-                              <Phone className="size-3.5 shrink-0 text-[#94a3b8]" aria-hidden />
-                              {phone}
-                            </a>
-                          ) : (
-                            <span className="text-[#94a3b8]">—</span>
-                          )}
+                        <td className="px-5 py-4 text-[#475569]">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Phone className="size-3.5 text-[#94a3b8]" />
+                            {phone}
+                          </span>
                         </td>
-                        <td className="whitespace-nowrap px-4 py-4 text-[#475569] sm:px-6">
-                          {last && !Number.isNaN(last.getTime()) ? (
-                            <span className="tabular-nums">{format(last, 'MMM d, yyyy · h:mm a')}</span>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                        <td className="px-4 py-4 text-right sm:px-6">
-                          <Button variant="ghost" size="sm" className="text-teal-800 hover:bg-teal-50" asChild>
-                            <Link to={ROUTES.practitioner.messages}>Messages</Link>
-                          </Button>
+                        <td className="px-5 py-4 text-[#475569]">{lastAppt}</td>
+                        <td className="px-5 py-4 text-right">
+                          {roomId ? (
+                            <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
+                              <Link to={ROUTES.practitioner.messagesRoom(roomId)}>{t('common.messages')}</Link>
+                            </Button>
+                          ) : null}
                         </td>
                       </tr>
                     );

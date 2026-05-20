@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 
 export function passwordStrengthScore(pw: string): number {
@@ -11,6 +12,7 @@ export function passwordStrengthScore(pw: string): number {
 }
 
 export function PasswordMeter({ password }: { password: string }) {
+  const { t } = useTranslation();
   const n = passwordStrengthScore(password);
   return (
     <div className="mt-1.5 space-y-1">
@@ -19,7 +21,7 @@ export function PasswordMeter({ password }: { password: string }) {
           <span key={i} className={cn('h-[3px] flex-1 rounded-sm bg-slate-200 transition-colors', i < n && 'bg-sky-500')} />
         ))}
       </div>
-      <p className="text-[11px] text-muted-foreground">6–12 characters · letters, numbers, or symbols</p>
+      <p className="text-[11px] text-muted-foreground">{t('auth.validation.passwordHint')}</p>
     </div>
   );
 }

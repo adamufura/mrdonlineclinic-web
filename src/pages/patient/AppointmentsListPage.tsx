@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Calendar, ChevronRight, Loader2, X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
@@ -24,15 +25,36 @@ function practitionerName(a: Record<string, unknown>): string {
 }
 
 const STATUS_TABS = [
-  { value: 'all', label: 'All', api: undefined as string | undefined },
-  { value: 'PENDING', label: 'Pending', api: 'PENDING' },
-  { value: 'CONFIRMED', label: 'Confirmed', api: 'CONFIRMED' },
-  { value: 'IN_PROGRESS', label: 'In progress', api: 'IN_PROGRESS' },
-  { value: 'COMPLETED', label: 'Completed', api: 'COMPLETED' },
-  { value: 'CANCELLED', label: 'Cancelled', api: 'CANCELLED' },
-  { value: 'REJECTED', label: 'Declined', api: 'REJECTED' },
-  { value: 'NO_SHOW', label: 'No-show', api: 'NO_SHOW' },
+  { value: 'all', labelKey: 'patient.appointmentsList.tabAll', api: undefined as string | undefined },
+  { value: 'PENDING', labelKey: 'patient.appointmentsList.tabPending', api: 'PENDING' },
+  { value: 'CONFIRMED', labelKey: 'patient.appointmentsList.tabConfirmed', api: 'CONFIRMED' },
+  { value: 'IN_PROGRESS', labelKey: 'patient.appointmentsList.tabInProgress', api: 'IN_PROGRESS' },
+  { value: 'COMPLETED', labelKey: 'patient.appointmentsList.tabCompleted', api: 'COMPLETED' },
+  { value: 'CANCELLED', labelKey: 'patient.appointmentsList.tabCancelled', api: 'CANCELLED' },
+  { value: 'REJECTED', labelKey: 'patient.appointmentsList.tabDeclined', api: 'REJECTED' },
+  { value: 'NO_SHOW', labelKey: 'patient.appointmentsList.tabNoShow', api: 'NO_SHOW' },
 ] as const;
+
+function translatedStatus(status: string, t: (key: string) => string): string {
+  switch (status) {
+    case 'PENDING':
+      return t('patient.appointment.statusPending');
+    case 'CONFIRMED':
+      return t('patient.appointment.statusConfirmed');
+    case 'IN_PROGRESS':
+      return t('patient.appointment.statusInProgress');
+    case 'COMPLETED':
+      return t('patient.appointment.statusCompleted');
+    case 'CANCELLED':
+      return t('patient.appointment.statusCancelled');
+    case 'REJECTED':
+      return t('patient.appointment.statusRejected');
+    case 'NO_SHOW':
+      return t('patient.appointment.statusNoShow');
+    default:
+      return status.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+  }
+}
 
 function statusBadgeClass(status: string): string {
   switch (status) {
@@ -55,11 +77,8 @@ function statusBadgeClass(status: string): string {
   }
 }
 
-function formatStatusLabel(status: string): string {
-  return status.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
-}
-
 export default function PatientAppointmentsListPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') ?? 'all';
@@ -106,7 +125,7 @@ export default function PatientAppointmentsListPage() {
   const cancelMut = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => cancelAppointment(id, reason),
     onSuccess: async () => {
-      toast.success('Appointment cancelled');
+      toast.success(t('patient.appointmentsList.cancelledToast'));
       setCancelId(null);
       setCancelReason('');
       await qc.invalidateQueries({ queryKey: ['patients', 'appointments'] });
@@ -121,7 +140,7 @@ export default function PatientAppointmentsListPage() {
   return (
     <>
       <Helmet>
-        <title>Appointments — MRD Online Clinic</title>
+        <title>{t('patient.appointmentsList.title')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -130,16 +149,16 @@ export default function PatientAppointmentsListPage() {
           <div>
             <p className="mb-2 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-[#64748b]">
               <Calendar className="size-3.5 text-sky-600" aria-hidden />
-              Your care
+              {t('patient.appointmentsList.badge')}
             </p>
-            <h1 className="font-display text-3xl font-normal tracking-tight text-[#0a1628]">Appointments</h1>
-            <p className="mt-2 max-w-2xl text-sm text-[#64748b]">
-              View upcoming visits, past sessions, and manage bookings you no longer need.
-            </p>
+            <h1 className="font-display text-3xl font-normal tracking-tight text-[#0a1628]">
+              {t('patient.appointmentsList.heading')}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-[#64748b]">{t('patient.appointmentsList.description')}</p>
           </div>
           {listQuery.isSuccess && meta && tab === 'all' ? (
-            <p className="text-sm text-[#64748b]">
-              <span className="font-semibold text-[#0a1628]">{meta.total}</span> total
+            <p className="text-sm font-semibold text-[#0a1628]">
+              {t('patient.appointmentsList.total', { count: meta.total })}
             </p>
           ) : null}
         </div>
@@ -147,16 +166,16 @@ export default function PatientAppointmentsListPage() {
         <div className="overflow-x-auto rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Tabs value={tab} onValueChange={setTab} className="w-full min-w-[640px]">
             <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
-              {STATUS_TABS.map((t) => (
+              {STATUS_TABS.map((tabRow) => (
                 <TabsTrigger
-                  key={t.value}
-                  value={t.value}
+                  key={tabRow.value}
+                  value={tabRow.value}
                   className={cn(
                     'rounded-lg border border-transparent px-3 py-2 text-[13px] data-[state=active]:border-sky-200 data-[state=active]:bg-white data-[state=active]:text-[#0a1628] data-[state=active]:shadow-sm dark:data-[state=active]:bg-white dark:data-[state=active]:text-[#0a1628]',
                     'text-[#64748b] hover:text-[#0a1628]',
                   )}
                 >
-                  {t.label}
+                  {t(tabRow.labelKey)}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -167,19 +186,19 @@ export default function PatientAppointmentsListPage() {
           {listQuery.isLoading ? (
             <div className="flex items-center justify-center gap-2 py-20 text-[#64748b]">
               <Loader2 className="size-5 animate-spin text-sky-600" aria-hidden />
-              Loading appointments…
+              {t('patient.appointmentsList.loading')}
             </div>
           ) : null}
           {listQuery.isError ? (
-            <p className="p-8 text-sm text-destructive">Could not load appointments. Try again shortly.</p>
+            <p className="p-8 text-sm text-destructive">{t('patient.appointmentsList.couldNotLoad')}</p>
           ) : null}
 
           {listQuery.isSuccess && items.length === 0 ? (
             <div className="px-6 py-16 text-center">
-              <p className="font-medium text-[#0a1628]">No appointments in this view</p>
-              <p className="mt-2 text-sm text-[#64748b]">Try another filter or book a visit from Find a doctor.</p>
+              <p className="font-medium text-[#0a1628]">{t('patient.appointmentsList.emptyTitle')}</p>
+              <p className="mt-2 text-sm text-[#64748b]">{t('patient.appointmentsList.emptyHintFilter')}</p>
               <Button asChild className="mt-6" variant="outline">
-                <Link to={ROUTES.patient.findDoctor}>Find a doctor</Link>
+                <Link to={ROUTES.patient.findDoctor}>{t('patient.dashboard.findDoctor')}</Link>
               </Button>
             </div>
           ) : null}
@@ -189,11 +208,13 @@ export default function PatientAppointmentsListPage() {
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-[#e2e8f0] bg-[#fafbfc] text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">
-                    <th className="px-4 py-3 font-medium sm:px-6">When</th>
-                    <th className="px-4 py-3 font-medium sm:px-6">Clinician</th>
-                    <th className="hidden px-4 py-3 font-medium md:table-cell sm:px-6">Reason</th>
-                    <th className="px-4 py-3 font-medium sm:px-6">Status</th>
-                    <th className="px-4 py-3 text-right font-medium sm:px-6">Actions</th>
+                    <th className="px-4 py-3 font-medium sm:px-6">{t('patient.appointmentsList.colWhen')}</th>
+                    <th className="px-4 py-3 font-medium sm:px-6">{t('patient.appointmentsList.colClinician')}</th>
+                    <th className="hidden px-4 py-3 font-medium md:table-cell sm:px-6">
+                      {t('patient.appointmentsList.colReason')}
+                    </th>
+                    <th className="px-4 py-3 font-medium sm:px-6">{t('patient.appointmentsList.colStatus')}</th>
+                    <th className="px-4 py-3 text-right font-medium sm:px-6">{t('patient.appointmentsList.colActions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#eef1f6]">
@@ -231,7 +252,7 @@ export default function PatientAppointmentsListPage() {
                               statusBadgeClass(status),
                             )}
                           >
-                            {formatStatusLabel(status)}
+                            {translatedStatus(status, t)}
                           </span>
                         </td>
                         <td className="px-4 py-4 sm:px-6">
@@ -249,7 +270,7 @@ export default function PatientAppointmentsListPage() {
                                 }}
                               >
                                 <X className="size-3.5" strokeWidth={2.5} />
-                                Cancel
+                                {t('patient.appointmentsList.cancel')}
                               </Button>
                             ) : null}
                             <Button
@@ -259,7 +280,7 @@ export default function PatientAppointmentsListPage() {
                               asChild
                             >
                               <Link to={ROUTES.patient.appointment(id)}>
-                                Open
+                                {t('patient.appointmentsList.viewDetails')}
                                 <ChevronRight className="size-3.5" />
                               </Link>
                             </Button>
@@ -276,7 +297,7 @@ export default function PatientAppointmentsListPage() {
           {listQuery.isSuccess && meta && totalPages > 1 ? (
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e2e8f0] bg-[#fafbfc] px-4 py-3 sm:px-6">
               <p className="text-xs text-[#64748b]">
-                Page <span className="font-semibold text-[#0a1628]">{meta.page}</span> of {totalPages}
+                {t('patient.appointmentsList.pageOf', { page: meta.page, total: totalPages })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -287,7 +308,7 @@ export default function PatientAppointmentsListPage() {
                   disabled={page <= 1}
                   onClick={() => setPage(page - 1)}
                 >
-                  Previous
+                  {t('patient.appointmentsList.pagePrev')}
                 </Button>
                 <Button
                   type="button"
@@ -297,7 +318,7 @@ export default function PatientAppointmentsListPage() {
                   disabled={page >= totalPages}
                   onClick={() => setPage(page + 1)}
                 >
-                  Next
+                  {t('patient.appointmentsList.pageNext')}
                 </Button>
               </div>
             </div>
@@ -313,21 +334,21 @@ export default function PatientAppointmentsListPage() {
             setCancelReason('');
           }
         }}
-        title="Cancel this appointment?"
+        title={t('patient.appointmentsList.cancelTitle')}
         description={
           <div className="space-y-3">
-            <p>Your clinician will be notified. You cannot undo this from the app.</p>
+            <p>{t('patient.appointmentsList.cancelDesc')}</p>
             <Textarea
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Brief reason (required)"
+              placeholder={t('patient.appointmentsList.cancelReason')}
               className="min-h-[88px] resize-y"
               disabled={cancelMut.isPending}
             />
           </div>
         }
-        confirmLabel={cancelMut.isPending ? 'Cancelling…' : 'Cancel appointment'}
-        cancelLabel="Keep appointment"
+        confirmLabel={cancelMut.isPending ? t('common.loading') : t('patient.appointment.cancelAppointment')}
+        cancelLabel={t('patient.appointmentsList.keepAppointment')}
         variant="destructive"
         onConfirm={async () => {
           const reason = cancelReason.trim();

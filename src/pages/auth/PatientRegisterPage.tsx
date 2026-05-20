@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
+import { useMemo } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -17,24 +19,42 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { registerPatient } from '@/features/auth/api';
 import { normalizeAxiosError } from '@/lib/api/errors';
-import { passwordSchema } from '@/lib/validators/auth';
+import { createPasswordSchema } from '@/lib/validators/auth-schemas';
 import { ROUTES } from '@/router/routes';
-const schema = z
-  .object({
-    firstName: z.string().min(1, 'Required'),
-    lastName: z.string().min(1, 'Required'),
-    email: z.string().email(),
-    phoneNumber: z.string().min(5, 'Enter a valid phone number'),
-    password: passwordSchema,
-    confirmPassword: z.string(),
-    acceptTerms: z.boolean().refine((v) => v === true, { message: 'You must accept the terms' }),
-  })
-  .refine((d) => d.password === d.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' });
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+};
 
 export default function PatientRegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const schema = useMemo(
+    () =>
+      z
+        .object({
+          firstName: z.string().min(1, t('auth.validation.required')),
+          lastName: z.string().min(1, t('auth.validation.required')),
+          email: z.string().email(),
+          phoneNumber: z.string().min(5, t('auth.validation.phoneInvalid')),
+          password: createPasswordSchema(t),
+          confirmPassword: z.string(),
+          acceptTerms: z.boolean().refine((v) => v === true, { message: t('auth.validation.acceptTerms') }),
+        })
+        .refine((d) => d.password === d.confirmPassword, {
+          path: ['confirmPassword'],
+          message: t('auth.validation.passwordMismatch'),
+        }),
+    [t],
+  );
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -68,12 +88,13 @@ export default function PatientRegisterPage() {
     <>
       <AccountCreatingOverlay open={mutation.isPending} />
       <Helmet>
-        <title>Patient registration — MRD Online Clinic</title>
+        <title>{t('auth.registerPatient.title')}</title>
       </Helmet>
       <div className="space-y-0.5">
-        <AuthEyebrow>Patient sign up</AuthEyebrow>
+        <AuthEyebrow>{t('auth.registerPatient.eyebrow')}</AuthEyebrow>
         <h1 className="font-display text-[clamp(1.65rem,3.8vw,2.35rem)] font-normal leading-[1.08] tracking-[-0.02em] text-brand-navy">
-          Welcome — let&apos;s create your <em className="text-brand-hero-blue not-italic">profile.</em>
+          {t('auth.registerPatient.heading')}{' '}
+          <em className="text-brand-hero-blue not-italic">{t('auth.registerPatient.headingEm')}</em>
         </h1>
       </div>
 
@@ -85,7 +106,7 @@ export default function PatientRegisterPage() {
       >
         <div className="space-y-1.5">
           <Label htmlFor="firstName" className="text-[12px] font-medium text-slate-700">
-            First name
+            {t('auth.registerPatient.firstName')}
           </Label>
           <div className="relative">
             <UserRound className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -103,7 +124,7 @@ export default function PatientRegisterPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="lastName" className="text-[12px] font-medium text-slate-700">
-            Last name
+            {t('auth.registerPatient.lastName')}
           </Label>
           <div className="relative">
             <UserRound className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -121,7 +142,7 @@ export default function PatientRegisterPage() {
 
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="email" className="text-[12px] font-medium text-slate-700">
-            Email address
+            {t('auth.registerPatient.email')}
           </Label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -140,7 +161,7 @@ export default function PatientRegisterPage() {
 
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="phoneNumber" className="text-[12px] font-medium text-slate-700">
-            Phone number
+            {t('auth.registerPatient.phone')}
           </Label>
           <div className="relative">
             <Phone className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -159,7 +180,7 @@ export default function PatientRegisterPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="password" className="text-[12px] font-medium text-slate-700">
-            Password
+            {t('auth.registerPatient.password')}
           </Label>
           <PasswordInput
             id="password"
@@ -178,7 +199,7 @@ export default function PatientRegisterPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="confirmPassword" className="text-[12px] font-medium text-slate-700">
-            Confirm password
+            {t('auth.registerPatient.confirmPassword')}
           </Label>
           <PasswordInput
             id="confirmPassword"
@@ -197,15 +218,15 @@ export default function PatientRegisterPage() {
         <label className="col-span-2 flex cursor-pointer items-start gap-2.5 text-[12px] leading-snug text-brand-body sm:text-[13px]">
           <input type="checkbox" className="mt-0.5 accent-sky-500" {...form.register('acceptTerms')} />
           <span>
-            I agree to the{' '}
+            {t('auth.registerPatient.termsPrefix')}{' '}
             <Link to="/terms" className="font-semibold text-brand-navy underline-offset-2 hover:underline">
-              terms of service
+              {t('auth.registerPatient.termsLink')}
             </Link>{' '}
-            and{' '}
+            {t('auth.registerPatient.termsAnd')}{' '}
             <Link to="/privacy" className="font-semibold text-brand-navy underline-offset-2 hover:underline">
-              privacy policy
+              {t('auth.registerPatient.privacyLink')}
             </Link>
-            , and consent to receive care via telemedicine.
+            {t('auth.registerPatient.termsSuffix')}
           </span>
         </label>
         {form.formState.errors.acceptTerms ? (
@@ -220,24 +241,24 @@ export default function PatientRegisterPage() {
           {mutation.isPending ? (
             <>
               <Loader2 className="size-5 shrink-0 animate-spin" strokeWidth={2.5} aria-hidden />
-              Creating account…
+              {t('auth.registerPatient.creating')}
             </>
           ) : (
             <>
-              Create my account
+              {t('auth.registerPatient.submit')}
               <ArrowRight className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
             </>
           )}
         </Button>
       </form>
 
-      <AuthDividerOr label="Or" />
+      <AuthDividerOr label={t('auth.or')} />
       <AuthSocialButtons />
 
       <p className="mt-5 text-center text-[13px] text-brand-body">
-        Already have an account?{' '}
+        {t('auth.registerPatient.hasAccount')}{' '}
         <Link to={ROUTES.login} className="font-semibold text-sky-800 hover:underline">
-          Log in instead
+          {t('auth.registerPatient.logInInstead')}
         </Link>
       </p>
     </>

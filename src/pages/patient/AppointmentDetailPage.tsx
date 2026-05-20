@@ -13,6 +13,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cancelAppointment, getAppointment } from '@/features/appointments/api';
 import { cn } from '@/lib/utils/cn';
+import { displayTranslatedField } from '@/lib/display-text';
 import { ROUTES } from '@/router/routes';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -49,8 +51,46 @@ function statusBadgeClass(status: string): string {
   }
 }
 
-function formatStatusLabel(status: string): string {
-  return status.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+function statusLabelKey(status: string): string {
+  switch (status) {
+    case 'PENDING':
+      return 'patient.appointment.statusPending';
+    case 'CONFIRMED':
+      return 'patient.appointment.statusConfirmed';
+    case 'IN_PROGRESS':
+      return 'patient.appointment.statusInProgress';
+    case 'COMPLETED':
+      return 'patient.appointment.statusCompleted';
+    case 'CANCELLED':
+      return 'patient.appointment.statusCancelled';
+    case 'REJECTED':
+      return 'patient.appointment.statusRejected';
+    case 'NO_SHOW':
+      return 'patient.appointment.statusNoShow';
+    default:
+      return 'patient.appointment.status';
+  }
+}
+
+function statusHintKey(status: string): string | null {
+  switch (status) {
+    case 'PENDING':
+      return 'patient.appointment.statusPendingHint';
+    case 'CONFIRMED':
+      return 'patient.appointment.statusConfirmedHint';
+    case 'IN_PROGRESS':
+      return 'patient.appointment.statusInProgressHint';
+    case 'COMPLETED':
+      return 'patient.appointment.statusCompletedHint';
+    case 'CANCELLED':
+      return 'patient.appointment.statusCancelledHint';
+    case 'REJECTED':
+      return 'patient.appointment.statusRejectedHint';
+    case 'NO_SHOW':
+      return 'patient.appointment.statusNoShowHint';
+    default:
+      return null;
+  }
 }
 
 function statusIcon(status: string) {
@@ -68,6 +108,7 @@ function statusIcon(status: string) {
 }
 
 export default function PatientAppointmentDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -83,7 +124,7 @@ export default function PatientAppointmentDetailPage() {
   const cancelMut = useMutation({
     mutationFn: ({ apptId, reason }: { apptId: string; reason: string }) => cancelAppointment(apptId, reason),
     onSuccess: async () => {
-      toast.success('Appointment cancelled');
+      toast.success(t('patient.appointmentsList.cancelledToast'));
       setCancelOpen(false);
       setCancelReason('');
       await qc.invalidateQueries({ queryKey: ['appointments', id] });
@@ -112,9 +153,10 @@ export default function PatientAppointmentDetailPage() {
   const durationMinutes = slot && typeof slot.durationMinutes === 'number' ? slot.durationMinutes : null;
 
   // Visit details
-  const reasonForVisit = appt && typeof appt.reasonForVisit === 'string' ? appt.reasonForVisit.trim() : '';
+  const apptRecord = appt as Record<string, unknown> | null;
+  const reasonForVisit = apptRecord ? displayTranslatedField(apptRecord, 'reasonForVisit') : '';
   const symptoms = appt && Array.isArray(appt.symptoms) ? (appt.symptoms as string[]).filter(Boolean) : [];
-  const practitionerNotes = appt && typeof appt.practitionerNotes === 'string' ? appt.practitionerNotes.trim() : '';
+  const practitionerNotes = apptRecord ? displayTranslatedField(apptRecord, 'practitionerNotes') : '';
   const cancellationReason = appt && typeof appt.cancellationReason === 'string' ? appt.cancellationReason.trim() : '';
   const cancelledAt = appt?.cancelledAt ? new Date(String(appt.cancelledAt)) : null;
   const startedAt = appt?.startedAt ? new Date(String(appt.startedAt)) : null;
@@ -126,7 +168,9 @@ export default function PatientAppointmentDetailPage() {
     <>
       <Helmet>
         <title>
-          {appt && prName ? `Appointment with Dr. ${prName}` : 'Appointment'} — MRD Online Clinic
+          {appt && prName
+            ? t('patient.appointment.titleWith', { name: prName })
+            : t('patient.appointment.title')}
         </title>
         <meta name="robots" content="noindex" />
       </Helmet>
@@ -139,30 +183,28 @@ export default function PatientAppointmentDetailPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-[#64748b] transition-colors hover:text-[#0a1628]"
         >
           <ArrowLeft className="size-4" />
-          Back to appointments
+          {t('patient.appointment.backToList')}
         </button>
 
         {/* Loading state */}
         {query.isLoading ? (
           <div className="flex items-center justify-center gap-2 py-20 text-[#64748b]">
             <Loader2 className="size-5 animate-spin text-sky-600" aria-hidden />
-            Loading appointment…
+            {t('patient.appointment.loading')}
           </div>
         ) : null}
 
         {/* Error state */}
         {query.isError ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center">
-            <p className="font-medium text-rose-900">Could not load this appointment</p>
-            <p className="mt-2 text-sm text-rose-700">
-              It may have been removed, or you don't have access.
-            </p>
+            <p className="font-medium text-rose-900">{t('patient.appointment.couldNotLoadDetail')}</p>
+            <p className="mt-2 text-sm text-rose-700">{t('patient.appointment.couldNotLoadHint')}</p>
             <Button
               variant="outline"
               className="mt-4"
               onClick={() => navigate(ROUTES.patient.appointments)}
             >
-              Go to appointments
+              {t('patient.appointment.goToAppointments')}
             </Button>
           </div>
         ) : null}
@@ -184,11 +226,11 @@ export default function PatientAppointmentDetailPage() {
                           statusBadgeClass(status),
                         )}
                       >
-                        {formatStatusLabel(status)}
+                        {t(statusLabelKey(status))}
                       </span>
                     </div>
                     <h1 className="font-display text-2xl font-normal tracking-tight text-[#0a1628] sm:text-[28px]">
-                      {reasonForVisit || 'Appointment'}
+                      {reasonForVisit || t('patient.appointment.fallbackTitle')}
                     </h1>
                     {scheduledStart ? (
                       <p className="text-sm text-[#64748b]">
@@ -209,7 +251,7 @@ export default function PatientAppointmentDetailPage() {
                       >
                         <Link to={ROUTES.patient.messagesRoom(chatRoom)}>
                           <MessageSquare className="size-3.5" />
-                          Message
+                          {t('patient.appointment.message')}
                         </Link>
                       </Button>
                     ) : null}
@@ -225,7 +267,7 @@ export default function PatientAppointmentDetailPage() {
                         }}
                       >
                         <X className="size-3.5" strokeWidth={2.5} />
-                        Cancel
+                        {t('patient.appointment.cancel')}
                       </Button>
                     ) : null}
                   </div>
@@ -235,17 +277,17 @@ export default function PatientAppointmentDetailPage() {
               {/* Schedule details */}
               <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
                 <h2 className="mb-4 font-display text-lg font-medium tracking-tight text-[#0a1628]">
-                  Schedule details
+                  {t('patient.appointment.scheduleDetails')}
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <InfoRow
                     icon={<Calendar className="size-4 text-sky-600" />}
-                    label="Date"
+                    label={t('patient.appointment.date')}
                     value={scheduledStart ? format(scheduledStart, 'EEE, MMM d, yyyy') : '—'}
                   />
                   <InfoRow
                     icon={<Clock className="size-4 text-sky-600" />}
-                    label="Time"
+                    label={t('patient.appointment.time')}
                     value={
                       scheduledStart
                         ? `${format(scheduledStart, 'h:mm a')}${scheduledEnd ? ` – ${format(scheduledEnd, 'h:mm a')}` : ''}`
@@ -254,12 +296,12 @@ export default function PatientAppointmentDetailPage() {
                   />
                   <InfoRow
                     icon={<Clock className="size-4 text-teal-600" />}
-                    label="Duration"
-                    value={durationMinutes ? `${durationMinutes} minutes` : '—'}
+                    label={t('patient.appointment.duration')}
+                    value={durationMinutes ? t('patient.appointment.durationMinutes', { count: durationMinutes }) : '—'}
                   />
                   <InfoRow
                     icon={<Calendar className="size-4 text-violet-600" />}
-                    label="Booked"
+                    label={t('patient.appointment.booked')}
                     value={createdAt ? formatDistanceToNowStrict(createdAt, { addSuffix: true }) : '—'}
                   />
                 </div>
@@ -267,25 +309,27 @@ export default function PatientAppointmentDetailPage() {
                 {/* Timeline events */}
                 {(startedAt || completedAt || cancelledAt) ? (
                   <div className="mt-5 border-t border-[#e2e8f0] pt-4">
-                    <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#64748b]">Timeline</p>
+                    <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#64748b]">
+                      {t('patient.appointment.timeline')}
+                    </p>
                     <div className="space-y-2">
                       {startedAt ? (
                         <TimelineItem
-                          label="Visit started"
+                          label={t('patient.appointment.visitStarted')}
                           time={format(startedAt, 'MMM d, h:mm a')}
                           color="text-sky-600"
                         />
                       ) : null}
                       {completedAt ? (
                         <TimelineItem
-                          label="Visit completed"
+                          label={t('patient.appointment.visitCompleted')}
                           time={format(completedAt, 'MMM d, h:mm a')}
                           color="text-emerald-600"
                         />
                       ) : null}
                       {cancelledAt ? (
                         <TimelineItem
-                          label="Cancelled"
+                          label={t('patient.appointment.cancelled')}
                           time={format(cancelledAt, 'MMM d, h:mm a')}
                           color="text-rose-600"
                         />
@@ -298,16 +342,20 @@ export default function PatientAppointmentDetailPage() {
               {/* Visit information */}
               <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
                 <h2 className="mb-4 font-display text-lg font-medium tracking-tight text-[#0a1628]">
-                  Visit information
+                  {t('patient.appointment.visitInformation')}
                 </h2>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-[#64748b]">Reason for visit</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-[#64748b]">
+                      {t('patient.appointment.reasonForVisit')}
+                    </p>
                     <p className="mt-1 text-sm text-[#0a1628]">{reasonForVisit || '—'}</p>
                   </div>
                   {symptoms.length > 0 ? (
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-[#64748b]">Symptoms</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-[#64748b]">
+                        {t('patient.appointment.symptoms')}
+                      </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {symptoms.map((s, i) => (
                           <span
@@ -322,7 +370,9 @@ export default function PatientAppointmentDetailPage() {
                   ) : null}
                   {cancellationReason ? (
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-rose-600">Cancellation reason</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-rose-600">
+                        {t('patient.appointment.cancellationReason')}
+                      </p>
                       <p className="mt-1 text-sm text-[#0a1628]">{cancellationReason}</p>
                     </div>
                   ) : null}
@@ -335,7 +385,7 @@ export default function PatientAppointmentDetailPage() {
                   <div className="mb-3 flex items-center gap-2">
                     <FileText className="size-4 text-sky-600" />
                     <h2 className="font-display text-lg font-medium tracking-tight text-[#0a1628]">
-                      Clinician notes
+                      {t('patient.appointment.clinicianNotes')}
                     </h2>
                   </div>
                   <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#334155]">
@@ -350,7 +400,9 @@ export default function PatientAppointmentDetailPage() {
               {/* Practitioner card */}
               {pr ? (
                 <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
-                  <p className="mb-4 text-xs font-medium uppercase tracking-wide text-[#64748b]">Your clinician</p>
+                  <p className="mb-4 text-xs font-medium uppercase tracking-wide text-[#64748b]">
+                    {t('patient.appointment.yourClinician')}
+                  </p>
                   <div className="flex items-center gap-4">
                     <UserAvatar
                       name={prName || 'Doctor'}
@@ -362,7 +414,7 @@ export default function PatientAppointmentDetailPage() {
                       <p className="font-display text-base font-medium text-[#0a1628]">
                         Dr. {prName}
                       </p>
-                      <p className="text-xs text-[#64748b]">General Practitioner</p>
+                      <p className="text-xs text-[#64748b]">{t('patient.appointment.generalPractitioner')}</p>
                     </div>
                   </div>
                   {chatRoom ? (
@@ -372,7 +424,7 @@ export default function PatientAppointmentDetailPage() {
                     >
                       <Link to={ROUTES.patient.messagesRoom(chatRoom)}>
                         <MessageSquare className="size-4" />
-                        Message Dr. {prFirstName || 'clinician'}
+                        {t('patient.appointment.messageDr', { name: prFirstName || t('patient.appointment.yourClinician') })}
                       </Link>
                     </Button>
                   ) : null}
@@ -381,20 +433,16 @@ export default function PatientAppointmentDetailPage() {
 
               {/* Status summary card */}
               <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
-                <p className="mb-4 text-xs font-medium uppercase tracking-wide text-[#64748b]">Status</p>
+                <p className="mb-4 text-xs font-medium uppercase tracking-wide text-[#64748b]">
+                  {t('patient.appointment.status')}
+                </p>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     {statusIcon(status)}
                     <div>
-                      <p className="text-sm font-medium text-[#0a1628]">{formatStatusLabel(status)}</p>
+                      <p className="text-sm font-medium text-[#0a1628]">{t(statusLabelKey(status))}</p>
                       <p className="text-xs text-[#64748b]">
-                        {status === 'PENDING' && 'Waiting for clinician confirmation'}
-                        {status === 'CONFIRMED' && 'Your clinician confirmed this visit'}
-                        {status === 'IN_PROGRESS' && 'Visit is currently in progress'}
-                        {status === 'COMPLETED' && 'This visit has been completed'}
-                        {status === 'CANCELLED' && 'This appointment was cancelled'}
-                        {status === 'REJECTED' && 'Your clinician declined this request'}
-                        {status === 'NO_SHOW' && 'Marked as no-show by clinician'}
+                        {statusHintKey(status) ? t(statusHintKey(status)!) : null}
                       </p>
                     </div>
                   </div>
@@ -404,7 +452,7 @@ export default function PatientAppointmentDetailPage() {
                       <p className="text-xs font-medium text-sky-800">
                         {formatDistanceToNowStrict(scheduledStart, { addSuffix: true })}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-sky-700/70">Until your appointment</p>
+                      <p className="mt-0.5 text-[11px] text-sky-700/70">{t('patient.appointment.untilAppointment')}</p>
                     </div>
                   ) : null}
                 </div>
@@ -412,24 +460,26 @@ export default function PatientAppointmentDetailPage() {
 
               {/* Quick links */}
               <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
-                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#64748b]">Quick links</p>
+                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#64748b]">
+                  {t('patient.appointment.quickLinks')}
+                </p>
                 <div className="space-y-2">
                   <QuickLink
                     to={ROUTES.patient.appointments}
                     icon={<Calendar className="size-4" />}
-                    label="All appointments"
+                    label={t('patient.appointment.allAppointments')}
                   />
                   {pr ? (
                     <QuickLink
                       to={ROUTES.patient.findDoctorProfile(String((pr as Record<string, unknown>)._id ?? ''))}
                       icon={<Stethoscope className="size-4" />}
-                      label={`Dr. ${prName}'s profile`}
+                      label={t('patient.appointment.practitionerProfile', { name: prName })}
                     />
                   ) : null}
                   <QuickLink
                     to={ROUTES.patient.prescriptions}
                     icon={<FileText className="size-4" />}
-                    label="Prescriptions"
+                    label={t('patient.appointment.prescriptions')}
                   />
                 </div>
               </section>
@@ -447,27 +497,27 @@ export default function PatientAppointmentDetailPage() {
             setCancelReason('');
           }
         }}
-        title="Cancel this appointment?"
+        title={t('patient.appointment.cancelTitle')}
         description={
           <div className="space-y-3">
-            <p>Your clinician will be notified. You cannot undo this.</p>
+            <p>{t('patient.appointment.cancelDesc')}</p>
             <Textarea
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Brief reason (required)"
+              placeholder={t('patient.appointment.cancelReasonPlaceholder')}
               className="min-h-[88px] resize-y"
               disabled={cancelMut.isPending}
             />
           </div>
         }
-        confirmLabel={cancelMut.isPending ? 'Cancelling…' : 'Cancel appointment'}
-        cancelLabel="Keep appointment"
+        confirmLabel={cancelMut.isPending ? t('patient.appointment.cancelling') : t('patient.appointment.cancelAppointment')}
+        cancelLabel={t('patient.appointmentsList.keepAppointment')}
         variant="destructive"
         onConfirm={async () => {
           const reason = cancelReason.trim();
           if (!id) return;
           if (reason.length < 1) {
-            toast.error('Please add a short cancellation reason.');
+            toast.error(t('patient.appointment.cancelReasonRequired'));
             throw new Error('Missing cancellation reason');
           }
           await cancelMut.mutateAsync({ apptId: id, reason });

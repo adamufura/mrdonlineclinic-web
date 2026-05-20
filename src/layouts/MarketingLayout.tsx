@@ -1,6 +1,8 @@
 import { type FormEvent, useState } from 'react';
 import { Lock, Mail, MapPin, Phone, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Link, Outlet } from 'react-router-dom';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { toast } from 'sonner';
 import { BrandMark } from '@/components/brand/BrandMark';
 import { MarketingFooterSocial } from '@/components/marketing/MarketingFooterSocial';
@@ -14,16 +16,17 @@ const navLinkClass =
   'text-[15px] font-semibold text-brand-navy transition-colors hover:text-brand-cyan xl:text-[16px]';
 
 function NewsletterSignup() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const trimmed = email.trim();
     if (!trimmed) {
-      toast.error('Please enter your email.');
+      toast.error(t('marketing.newsletter.emailRequired'));
       return;
     }
-    toast.success('Thanks for subscribing — we will keep you posted.');
+    toast.success(t('marketing.newsletter.thanks'));
     setEmail('');
   }
 
@@ -33,7 +36,7 @@ function NewsletterSignup() {
         type="email"
         name="newsletter-email"
         autoComplete="email"
-        placeholder="Enter Email"
+        placeholder={t('marketing.newsletter.placeholder')}
         value={email}
         onChange={(ev) => setEmail(ev.target.value)}
         className="h-11 min-w-0 flex-1 rounded-l-xl rounded-r-none border-brand-stroke-soft bg-white text-sm shadow-sm focus-visible:ring-brand-hero-blue/35"
@@ -42,7 +45,7 @@ function NewsletterSignup() {
         type="submit"
         className="h-11 shrink-0 rounded-l-none rounded-r-xl bg-brand-hero-blue px-5 text-sm font-semibold text-white shadow-sm hover:bg-brand-navy"
       >
-        Submit
+        {t('marketing.newsletter.submit')}
       </Button>
     </form>
   );
@@ -66,24 +69,37 @@ function Logo() {
 }
 
 export function MarketingLayout() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
 
   const hashLinks = (
     <>
       <Link className={navLinkClass} to={ROUTES.home}>
-        Home
+        {t('marketing.nav.home')}
       </Link>
       <Link className={navLinkClass} to={ROUTES.findDoctor}>
-        Practitioners
+        {t('marketing.nav.practitioners')}
       </Link>
       <Link className={navLinkClass} to={`${ROUTES.home}#patients`}>
-        Patients
+        {t('marketing.nav.patients')}
       </Link>
       <Link className={navLinkClass} to={`${ROUTES.home}#pharmacy`}>
-        Pharmacy
+        {t('marketing.nav.pharmacy')}
       </Link>
     </>
   );
+
+  const companyLinks = [
+    { label: t('marketing.footer.home'), to: ROUTES.home },
+    { label: t('marketing.footer.specialities'), to: ROUTES.specialties },
+    { label: t('marketing.footer.videoConsult'), to: ROUTES.findDoctor },
+  ];
+
+  const specialtyLinks = [
+    { label: t('marketing.footer.neurology'), to: ROUTES.specialties },
+    { label: t('marketing.footer.cardiologist'), to: ROUTES.specialties },
+    { label: t('marketing.footer.dentist'), to: ROUTES.specialties },
+  ];
 
   return (
     <div className="flex min-h-dvh flex-col bg-brand-marketing font-sans text-brand-navy">
@@ -94,26 +110,27 @@ export function MarketingLayout() {
           </div>
           <nav className="hidden items-center justify-center gap-x-7 lg:flex xl:gap-x-9">{hashLinks}</nav>
           <div className="flex items-center justify-end gap-2 sm:gap-3">
+            <LanguageSwitcher />
             {user?.role === 'PATIENT' ? (
               <Button asChild size="sm">
-                <Link to={ROUTES.patient.dashboard}>Patient hub</Link>
+                <Link to={ROUTES.patient.dashboard}>{t('marketing.nav.patientHub')}</Link>
               </Button>
             ) : user?.role === 'PRACTITIONER' ? (
               <Button asChild size="sm">
-                <Link to={ROUTES.practitioner.dashboard}>Practitioner hub</Link>
+                <Link to={ROUTES.practitioner.dashboard}>{t('marketing.nav.practitionerHub')}</Link>
               </Button>
             ) : (
               <>
                 <Button variant="navNavy" size="sm" className="hidden gap-2 sm:inline-flex lg:gap-2" asChild>
                   <Link to={ROUTES.register}>
                     <User className="size-4" />
-                    Register
+                    {t('marketing.nav.register')}
                   </Link>
                 </Button>
                 <Button variant="navCyan" size="sm" className="gap-2 lg:gap-2" asChild>
                   <Link to={ROUTES.login}>
                     <Lock className="size-4" />
-                    Log in
+                    {t('marketing.nav.logIn')}
                   </Link>
                 </Button>
               </>
@@ -126,7 +143,7 @@ export function MarketingLayout() {
             <Button variant="navNavy" size="sm" className="gap-2 sm:hidden" asChild>
               <Link to={ROUTES.register}>
                 <User className="size-4" />
-                Register
+                {t('marketing.nav.register')}
               </Link>
             </Button>
           ) : null}
@@ -139,24 +156,16 @@ export function MarketingLayout() {
       <footer className="border-t border-brand-stroke-soft bg-[#f4f9fc]">
         <div className="mx-auto w-full max-w-site px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2 xl:grid-cols-5 xl:gap-10">
-            {/* Brand */}
             <div>
               <Logo />
-              <p className="mt-4 max-w-sm text-sm leading-relaxed text-brand-body">
-                Effortlessly schedule your medical appointments with MRD Online Clinic. Connect with healthcare
-                professionals, manage appointments, and prioritize your wellbeing.
-              </p>
+              <p className="mt-4 max-w-sm text-sm leading-relaxed text-brand-body">{t('marketing.footer.tagline')}</p>
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-brand-navy">Company</h3>
+              <h3 className="text-base font-bold text-brand-navy">{t('marketing.footer.company')}</h3>
               <ul className="mt-4 space-y-2.5">
-                {[
-                  { label: 'Home', to: ROUTES.home },
-                  { label: 'Specialities', to: ROUTES.specialties },
-                  { label: 'Video Consult', to: ROUTES.findDoctor },
-                ].map((l) => (
-                  <li key={l.label}>
+                {companyLinks.map((l) => (
+                  <li key={l.to + l.label}>
                     <Link to={l.to} className="text-sm text-brand-body transition-colors hover:text-brand-hero-blue">
                       {l.label}
                     </Link>
@@ -166,14 +175,10 @@ export function MarketingLayout() {
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-brand-navy">Specialities</h3>
+              <h3 className="text-base font-bold text-brand-navy">{t('marketing.footer.specialitiesHeading')}</h3>
               <ul className="mt-4 space-y-2.5">
-                {[
-                  { label: 'Neurology', to: ROUTES.specialties },
-                  { label: 'Cardiologist', to: ROUTES.specialties },
-                  { label: 'Dentist', to: ROUTES.specialties },
-                ].map((l) => (
-                  <li key={l.label}>
+                {specialtyLinks.map((l) => (
+                  <li key={l.to + l.label}>
                     <Link to={l.to} className="text-sm text-brand-body transition-colors hover:text-brand-hero-blue">
                       {l.label}
                     </Link>
@@ -183,14 +188,14 @@ export function MarketingLayout() {
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-brand-navy">Contact Us</h3>
+              <h3 className="text-base font-bold text-brand-navy">{t('marketing.footer.contactUs')}</h3>
               <ul className="mt-4 space-y-3.5">
                 <li className="flex items-start gap-2.5 text-sm text-brand-body">
                   <MapPin className="mt-0.5 size-4 shrink-0 text-brand-navy" aria-hidden />
                   <span>
-                    Abba Saude House
+                    {t('marketing.footer.addressLine1')}
                     <br />
-                    Katsina, Nigeria
+                    {t('marketing.footer.addressLine2')}
                   </span>
                 </li>
                 <li>
@@ -215,7 +220,7 @@ export function MarketingLayout() {
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-brand-navy">Join Our Newsletter</h3>
+              <h3 className="text-base font-bold text-brand-navy">{t('marketing.newsletter.title')}</h3>
               <NewsletterSignup />
               <MarketingFooterSocial />
             </div>
@@ -224,16 +229,16 @@ export function MarketingLayout() {
 
         <div className="border-t border-brand-stroke-soft bg-[#eef5f9] py-5">
           <div className="mx-auto flex w-full max-w-site flex-col items-center justify-between gap-3 px-4 text-sm text-brand-body sm:flex-row sm:px-6 lg:px-8">
-            <p>Copyright © {new Date().getFullYear()} MRD Online Clinic. All Rights Reserved</p>
+            <p>{t('marketing.footer.copyright', { year: new Date().getFullYear() })}</p>
             <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
               <Link to="/privacy" className="transition-colors hover:text-brand-hero-blue">
-                Privacy Policy
+                {t('marketing.footer.privacy')}
               </Link>
               <span className="text-brand-body/40" aria-hidden>
                 |
               </span>
               <Link to="/terms" className="transition-colors hover:text-brand-hero-blue">
-                Terms &amp; Conditions
+                {t('marketing.footer.terms')}
               </Link>
             </p>
           </div>

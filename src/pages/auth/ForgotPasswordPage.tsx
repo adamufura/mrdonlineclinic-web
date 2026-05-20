@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
+import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -14,16 +16,16 @@ import { forgotPassword } from '@/features/auth/api';
 import { normalizeAxiosError } from '@/lib/api/errors';
 import { ROUTES } from '@/router/routes';
 
-const schema = z.object({ email: z.string().email() });
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = { email: string };
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
+  const schema = useMemo(() => z.object({ email: z.string().email() }), []);
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '' } });
   const mutation = useMutation({
     mutationFn: (v: FormValues) => forgotPassword(v.email),
     onSuccess: () => {
-      toast.success('If an account exists, we sent reset instructions.');
+      toast.success(t('auth.forgotPassword.successToast'));
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
   });
@@ -31,22 +33,21 @@ export default function ForgotPasswordPage() {
   return (
     <>
       <Helmet>
-        <title>Forgot password — MRD Online Clinic</title>
+        <title>{t('auth.forgotPassword.title')}</title>
       </Helmet>
       <div className="space-y-1">
-        <AuthEyebrow>Account recovery</AuthEyebrow>
+        <AuthEyebrow>{t('auth.forgotPassword.eyebrow')}</AuthEyebrow>
         <h1 className="font-display text-[clamp(1.85rem,4vw,2.5rem)] font-normal leading-[1.08] tracking-[-0.02em] text-brand-navy">
-          Reset your <em className="text-brand-hero-blue not-italic">password.</em>
+          {t('auth.forgotPassword.heading')}{' '}
+          <em className="text-brand-hero-blue not-italic">{t('auth.forgotPassword.headingEm')}</em>
         </h1>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-brand-body">
-          Enter your email and we will send a reset link if an account exists.
-        </p>
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-brand-body">{t('auth.forgotPassword.intro')}</p>
       </div>
 
       <form className="mt-8 space-y-5" onSubmit={form.handleSubmit((v) => mutation.mutate(v))}>
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-[12px] font-medium text-slate-700">
-            Email address
+            {t('auth.forgotPassword.email')}
           </Label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -67,13 +68,13 @@ export default function ForgotPasswordPage() {
           disabled={mutation.isPending}
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sky-500 to-sky-800 text-[14px] font-semibold text-white shadow-[0_8px_20px_rgba(14,165,233,0.28)] transition hover:brightness-[1.03] disabled:opacity-60"
         >
-          {mutation.isPending ? 'Sending…' : 'Send link'}
+          {mutation.isPending ? t('auth.forgotPassword.sending') : t('auth.forgotPassword.sendLink')}
           {!mutation.isPending ? <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden /> : null}
         </Button>
 
         <p className="text-center text-[13px] text-brand-body">
           <Link to={ROUTES.login} className="font-semibold text-sky-800 hover:underline">
-            Back to log in
+            {t('auth.forgotPassword.backToLogin')}
           </Link>
         </p>
       </form>

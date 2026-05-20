@@ -12,6 +12,8 @@ export type ApiEnvelope<T = unknown> = {
   meta?: ApiMeta;
 };
 
+import type { AppLanguage } from './language';
+
 export type AuthRole = 'PATIENT' | 'PRACTITIONER' | 'ADMIN';
 
 export type AuthUser = {
@@ -25,6 +27,7 @@ export type AuthUser = {
   phoneNumber: string;
   status: string;
   isEmailVerified: boolean;
+  preferredLanguage?: AppLanguage;
   lastLoginAt?: string;
   profilePhotoUrl?: string;
 };

@@ -17,9 +17,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { displayTranslatedField } from '@/lib/display-text';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -81,11 +83,29 @@ function statusBadgeClass(status: string): string {
   }
 }
 
-function formatStatusLabel(status: string): string {
-  return status.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+function formatStatusLabel(status: string, t: (key: string) => string): string {
+  switch (status) {
+    case 'PENDING':
+      return t('practitioner.appointment.statusPending');
+    case 'CONFIRMED':
+      return t('practitioner.appointment.statusConfirmed');
+    case 'IN_PROGRESS':
+      return t('practitioner.appointment.statusInProgress');
+    case 'COMPLETED':
+      return t('practitioner.appointment.statusCompleted');
+    case 'CANCELLED':
+      return t('practitioner.appointment.statusCancelled');
+    case 'REJECTED':
+      return t('practitioner.appointment.statusRejected');
+    case 'NO_SHOW':
+      return t('practitioner.appointment.statusNoShow');
+    default:
+      return status.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+  }
 }
 
 export default function PractitionerAppointmentDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const qc = useQueryClient();
   const validId = id && /^[a-fA-F0-9]{24}$/.test(id) ? id : '';
@@ -212,7 +232,9 @@ export default function PractitionerAppointmentDetailPage() {
 
   const scheduledStart = appt?.scheduledStart ? new Date(String(appt.scheduledStart)) : null;
   const scheduledEnd = appt?.scheduledEnd ? new Date(String(appt.scheduledEnd)) : null;
-  const pageTitle = appt ? `${patientName(appt)} — Appointment` : 'Appointment';
+  const pageTitle = appt
+    ? t('practitioner.appointment.title', { name: patientName(appt) })
+    : t('practitioner.appointment.titleFallback');
 
   return (
     <>
@@ -226,13 +248,13 @@ export default function PractitionerAppointmentDetailPage() {
           <Button variant="ghost" size="sm" className="gap-1.5 px-2 text-teal-800 hover:bg-teal-50" asChild>
             <Link to={ROUTES.practitioner.appointments}>
               <ArrowLeft className="size-4" />
-              Appointments
+              {t('practitioner.appointment.backToList')}
             </Link>
           </Button>
         </div>
 
         {!validId ? (
-          <p className="text-sm text-destructive">Invalid appointment link.</p>
+          <p className="text-sm text-destructive">{t('practitioner.appointment.invalidLink')}</p>
         ) : null}
 
         {apptQuery.isLoading ? (
@@ -245,10 +267,10 @@ export default function PractitionerAppointmentDetailPage() {
 
         {apptQuery.isError ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            This appointment could not be loaded. It may have been removed or you may not have access.
+            {t('practitioner.appointment.couldNotLoad')}
             <div className="mt-3">
               <Button variant="outline" size="sm" asChild>
-                <Link to={ROUTES.practitioner.appointments}>Back to list</Link>
+                <Link to={ROUTES.practitioner.appointments}>{t('practitioner.appointment.backToListBtn')}</Link>
               </Button>
             </div>
           </div>
@@ -260,7 +282,7 @@ export default function PractitionerAppointmentDetailPage() {
               <div>
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="font-display text-2xl font-semibold tracking-tight text-[#0a1628] sm:text-3xl">
-                    Visit with {patientName(appt)}
+                    {t('practitioner.appointment.visitWith', { name: patientName(appt) })}
                   </h1>
                   <span
                     className={cn(
@@ -268,7 +290,7 @@ export default function PractitionerAppointmentDetailPage() {
                       statusBadgeClass(status),
                     )}
                   >
-                    {formatStatusLabel(status)}
+                    {formatStatusLabel(status, t)}
                   </span>
                 </div>
                 {scheduledStart ? (
@@ -290,7 +312,7 @@ export default function PractitionerAppointmentDetailPage() {
                 <Button variant="outline" size="sm" className="gap-2 rounded-lg border-[#e2e8f0]" asChild>
                   <Link to={ROUTES.practitioner.messagesRoom(chatRoomId)}>
                     <MessageSquare className="size-4 text-teal-700" />
-                    Messages
+                    {t('common.messages')}
                   </Link>
                 </Button>
               ) : null}
@@ -299,7 +321,7 @@ export default function PractitionerAppointmentDetailPage() {
             <div className="grid gap-5 lg:grid-cols-3">
               <div className="space-y-5 lg:col-span-2">
                 <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
-                  <h2 className="font-display text-lg font-medium text-[#0a1628]">Patient</h2>
+                  <h2 className="font-display text-lg font-medium text-[#0a1628]">{t('practitioner.appointment.patient')}</h2>
                   <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-200 to-sky-400 text-lg font-semibold text-[#04132a]">
                       {patientName(appt)
@@ -334,20 +356,22 @@ export default function PractitionerAppointmentDetailPage() {
                 <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
                   <h2 className="flex items-center gap-2 font-display text-lg font-medium text-[#0a1628]">
                     <Stethoscope className="size-5 text-teal-600" aria-hidden />
-                    Visit details
+                    {t('practitioner.appointment.visitDetails')}
                   </h2>
                   <div className="mt-4 space-y-4 text-sm">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">Reason for visit</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">
+                        {t('practitioner.appointment.reasonForVisit')}
+                      </p>
                       <p className="mt-1.5 leading-relaxed text-[#0a1628]">
-                        {typeof appt.reasonForVisit === 'string' && appt.reasonForVisit.trim()
-                          ? appt.reasonForVisit
-                          : '—'}
+                        {displayTranslatedField(appt as Record<string, unknown>, 'reasonForVisit') || '—'}
                       </p>
                     </div>
                     {Array.isArray(appt.symptoms) && appt.symptoms.length > 0 ? (
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">Symptoms</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">
+                          {t('practitioner.appointment.symptoms')}
+                        </p>
                         <ul className="mt-2 flex flex-wrap gap-2">
                           {(appt.symptoms as unknown[])
                             .filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
@@ -364,7 +388,7 @@ export default function PractitionerAppointmentDetailPage() {
                     ) : null}
                     {appt.startedAt ? (
                       <p className="text-xs text-[#64748b]">
-                        Visit started{' '}
+                        {t('practitioner.appointment.visitStarted')}{' '}
                         <span className="font-medium text-[#475569]">
                           {format(new Date(String(appt.startedAt)), "MMM d, yyyy 'at' h:mm a")}
                         </span>
@@ -372,7 +396,7 @@ export default function PractitionerAppointmentDetailPage() {
                     ) : null}
                     {appt.completedAt ? (
                       <p className="text-xs text-[#64748b]">
-                        Visit completed{' '}
+                        {t('practitioner.appointment.visitCompleted')}{' '}
                         <span className="font-medium text-[#475569]">
                           {format(new Date(String(appt.completedAt)), "MMM d, yyyy 'at' h:mm a")}
                         </span>
@@ -383,11 +407,13 @@ export default function PractitionerAppointmentDetailPage() {
 
                 {status === 'CANCELLED' ? (
                   <section className="rounded-[18px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
-                    <h2 className="font-display text-lg font-medium text-[#0a1628]">Cancellation</h2>
+                    <h2 className="font-display text-lg font-medium text-[#0a1628]">
+                      {t('practitioner.appointment.cancellation')}
+                    </h2>
                     <p className="mt-2 text-sm text-[#64748b]">
                       {typeof appt.cancellationReason === 'string' && appt.cancellationReason.trim()
                         ? appt.cancellationReason
-                        : 'No reason recorded.'}
+                        : t('practitioner.appointment.noCancelReason')}
                     </p>
                     {appt.cancelledAt ? (
                       <p className="mt-2 text-xs text-[#94a3b8]">
@@ -400,7 +426,7 @@ export default function PractitionerAppointmentDetailPage() {
 
               <div className="space-y-5">
                 <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
-                  <h2 className="font-display text-lg font-medium text-[#0a1628]">Actions</h2>
+                  <h2 className="font-display text-lg font-medium text-[#0a1628]">{t('practitioner.appointment.actions')}</h2>
                   <div className="mt-4 flex flex-col gap-2">
                     {status === 'PENDING' ? (
                       <>
@@ -411,7 +437,7 @@ export default function PractitionerAppointmentDetailPage() {
                           onClick={() => confirmMut.mutate()}
                         >
                           {confirmMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-                          Approve request
+                          {t('practitioner.appointment.approveRequest')}
                         </Button>
                         <Button
                           type="button"
@@ -421,7 +447,7 @@ export default function PractitionerAppointmentDetailPage() {
                           onClick={() => setRejectOpen(true)}
                         >
                           <X className="size-4" />
-                          Decline request
+                          {t('practitioner.appointment.declineRequest')}
                         </Button>
                         <Button
                           type="button"
@@ -430,7 +456,7 @@ export default function PractitionerAppointmentDetailPage() {
                           className="w-full text-[#64748b] hover:bg-slate-50 hover:text-[#0a1628]"
                           onClick={() => setCancelOpen(true)}
                         >
-                          Cancel appointment…
+                          {t('practitioner.appointment.cancelAppointment')}
                         </Button>
                       </>
                     ) : null}
@@ -444,7 +470,7 @@ export default function PractitionerAppointmentDetailPage() {
                           onClick={() => startMut.mutate()}
                         >
                           {startMut.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                          Start visit
+                          {t('practitioner.appointment.startVisit')}
                         </Button>
                         <Button
                           type="button"
@@ -453,7 +479,7 @@ export default function PractitionerAppointmentDetailPage() {
                           className="w-full justify-center gap-2 rounded-xl border-violet-200 text-violet-900 hover:bg-violet-50"
                           onClick={() => setNoShowOpen(true)}
                         >
-                          Mark no-show
+                          {t('practitioner.appointment.markNoShow')}
                         </Button>
                         <Button
                           type="button"
@@ -462,7 +488,7 @@ export default function PractitionerAppointmentDetailPage() {
                           className="w-full text-[#64748b] hover:bg-slate-50"
                           onClick={() => setCancelOpen(true)}
                         >
-                          Cancel appointment…
+                          {t('practitioner.appointment.cancelAppointment')}
                         </Button>
                       </>
                     ) : null}
@@ -476,7 +502,7 @@ export default function PractitionerAppointmentDetailPage() {
                           onClick={() => completeMut.mutate()}
                         >
                           {completeMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-                          Complete visit
+                          {t('practitioner.appointment.completeVisit')}
                         </Button>
                         <Button
                           type="button"
@@ -485,13 +511,13 @@ export default function PractitionerAppointmentDetailPage() {
                           className="w-full text-[#64748b] hover:bg-slate-50"
                           onClick={() => setCancelOpen(true)}
                         >
-                          Cancel appointment…
+                          {t('practitioner.appointment.cancelAppointment')}
                         </Button>
                       </>
                     ) : null}
 
                     {['COMPLETED', 'REJECTED', 'NO_SHOW', 'CANCELLED'].includes(status) ? (
-                      <p className="text-sm text-[#64748b]">No further status changes from this screen.</p>
+                      <p className="text-sm text-[#64748b]">{t('practitioner.appointment.noFurtherChanges')}</p>
                     ) : null}
                     {status === 'COMPLETED' && !appt.prescription ? (
                       <Button
@@ -500,18 +526,18 @@ export default function PractitionerAppointmentDetailPage() {
                         onClick={() => setPrescriptionOpen(true)}
                       >
                         <Pill className="size-4" />
-                        Issue prescription
+                        {t('practitioner.appointment.issuePrescription')}
                       </Button>
                     ) : null}
                     {status === 'COMPLETED' && appt.prescription ? (
                       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                         <div className="flex items-center gap-2">
                           <FileText className="size-4 text-emerald-600" />
-                          <p className="text-sm font-medium text-emerald-900">Prescription issued</p>
+                          <p className="text-sm font-medium text-emerald-900">
+                            {t('practitioner.appointment.prescriptionIssued')}
+                          </p>
                         </div>
-                        <p className="mt-1 text-xs text-emerald-700">
-                          A prescription has already been issued for this appointment.
-                        </p>
+                        <p className="mt-1 text-xs text-emerald-700">{t('practitioner.appointment.prescriptionAlready')}</p>
                       </div>
                     ) : null}
                   </div>
@@ -520,9 +546,9 @@ export default function PractitionerAppointmentDetailPage() {
                 <section className="rounded-[18px] border border-[#e2e8f0] bg-white p-6 shadow-sm">
                   <h2 className="flex items-center gap-2 font-display text-lg font-medium text-[#0a1628]">
                     <User className="size-5 text-slate-500" aria-hidden />
-                    Your notes
+                    {t('practitioner.appointment.yourNotes')}
                   </h2>
-                  <p className="mt-1 text-xs text-[#64748b]">Private to your practice. Visible on this appointment only.</p>
+                  <p className="mt-1 text-xs text-[#64748b]">{t('practitioner.appointment.notesHint')}</p>
                   <Textarea
                     className="mt-3 min-h-[120px] border-slate-200 bg-white text-slate-900 dark:bg-white dark:text-slate-900"
                     value={notes}
@@ -530,7 +556,7 @@ export default function PractitionerAppointmentDetailPage() {
                       setNotes(e.target.value);
                       setNotesDirty(true);
                     }}
-                    placeholder="Clinical notes, follow-up reminders…"
+                    placeholder={t('practitioner.appointment.notesPlaceholder')}
                   />
                   <Button
                     type="button"
@@ -540,7 +566,7 @@ export default function PractitionerAppointmentDetailPage() {
                     disabled={notesMut.isPending}
                     onClick={() => notesMut.mutate(notes)}
                   >
-                    {notesMut.isPending ? 'Saving…' : 'Save notes'}
+                    {notesMut.isPending ? t('common.loading') : t('practitioner.appointment.saveNotes')}
                   </Button>
                 </section>
               </div>
@@ -552,10 +578,10 @@ export default function PractitionerAppointmentDetailPage() {
       <ConfirmDialog
         open={rejectOpen}
         onOpenChange={setRejectOpen}
-        title="Decline this booking?"
-        description="The patient will be notified and the slot will reopen for other bookings."
-        confirmLabel={rejectMut.isPending ? 'Declining…' : 'Decline'}
-        cancelLabel="Keep pending"
+        title={t('practitioner.appointment.declineTitle')}
+        description={t('practitioner.appointment.declineDesc')}
+        confirmLabel={rejectMut.isPending ? t('practitioner.appointment.declining') : t('practitioner.appointment.decline')}
+        cancelLabel={t('practitioner.appointment.keepPending')}
         variant="destructive"
         onConfirm={async () => {
           await rejectMut.mutateAsync();
@@ -565,10 +591,10 @@ export default function PractitionerAppointmentDetailPage() {
       <ConfirmDialog
         open={noShowOpen}
         onOpenChange={setNoShowOpen}
-        title="Mark as no-show?"
-        description="Use when the patient did not attend a confirmed visit. The visit will be closed as a no-show."
-        confirmLabel={noShowMut.isPending ? 'Saving…' : 'Mark no-show'}
-        cancelLabel="Back"
+        title={t('practitioner.appointment.noShowTitle')}
+        description={t('practitioner.appointment.noShowDesc')}
+        confirmLabel={noShowMut.isPending ? t('common.loading') : t('practitioner.appointment.markNoShow')}
+        cancelLabel={t('chat.back')}
         variant="destructive"
         onConfirm={async () => {
           await noShowMut.mutateAsync();
@@ -586,13 +612,11 @@ export default function PractitionerAppointmentDetailPage() {
       >
         <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle>Cancel appointment</DialogTitle>
-            <DialogDescription>
-              Please give a short reason. The patient will see this in their appointment history.
-            </DialogDescription>
+            <DialogTitle>{t('practitioner.appointment.cancelDialogTitle')}</DialogTitle>
+            <DialogDescription>{t('practitioner.appointment.cancelDialogDesc')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="cancel-reason">Reason</Label>
+            <Label htmlFor="cancel-reason">{t('practitioner.appointment.reason')}</Label>
             <Textarea
               id="cancel-reason"
               value={cancelReason}
@@ -604,7 +628,7 @@ export default function PractitionerAppointmentDetailPage() {
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button type="button" variant="outline" onClick={() => setCancelOpen(false)}>
-              Back
+              {t('chat.back')}
             </Button>
             <Button
               type="button"
@@ -612,7 +636,7 @@ export default function PractitionerAppointmentDetailPage() {
               disabled={!cancelReason.trim() || cancelMut.isPending}
               onClick={() => cancelMut.mutate(cancelReason.trim())}
             >
-              {cancelMut.isPending ? 'Cancelling…' : 'Cancel appointment'}
+              {cancelMut.isPending ? t('common.loading') : t('practitioner.appointment.cancelDialogTitle')}
             </Button>
           </DialogFooter>
         </DialogContent>

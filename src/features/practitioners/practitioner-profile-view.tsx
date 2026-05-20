@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { addDays, startOfDay } from 'date-fns';
 import { ArrowLeft, Star } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { PractitionerBookingWidget } from '@/features/booking/practitioner-booking-widget';
 import { getPractitionerPublicProfile, getPractitionerPublicSlots } from '@/features/practitioners/public-api';
@@ -40,10 +41,12 @@ type PractitionerProfileViewProps = {
 export function PractitionerProfileView({
   practitionerId,
   backTo,
-  backLabel = 'Back to find a doctor',
+  backLabel,
   portalMode = false,
 }: PractitionerProfileViewProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const resolvedBackLabel = backLabel ?? t('patient.practitionerProfile.backToFindDoctor');
   const user = useAuthStore((s) => s.user);
   const id = practitionerId && /^[a-fA-F0-9]{24}$/.test(practitionerId) ? practitionerId : '';
 
@@ -71,10 +74,10 @@ export function PractitionerProfileView({
         className="inline-flex items-center gap-2 text-sm font-semibold text-sky-800 transition hover:text-[#0a1628]"
       >
         <ArrowLeft className="size-4 shrink-0" aria-hidden />
-        {backLabel}
+        {resolvedBackLabel}
       </Link>
 
-      {!id ? <p className="mt-8 text-sm text-red-600">Invalid practitioner id.</p> : null}
+      {!id ? <p className="mt-8 text-sm text-red-600">{t('patient.practitionerProfile.invalidId')}</p> : null}
 
       {profile.isLoading ? (
         <div className="mt-8 space-y-4">
@@ -85,7 +88,7 @@ export function PractitionerProfileView({
 
       {profile.isError ? (
         <p className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          This practitioner is not available or the link is invalid.
+          {t('patient.practitionerProfile.notAvailable')}
         </p>
       ) : null}
 
@@ -104,7 +107,7 @@ export function PractitionerProfileView({
 
           {typeof pr.bio === 'string' && pr.bio.trim() ? (
             <section className="rounded-2xl border border-[#e2e8f0] bg-white p-6 shadow-sm sm:p-8">
-              <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">About</h2>
+              <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">{t('patient.practitionerProfile.about')}</h2>
               <p className="mt-4 text-[15px] leading-relaxed text-[#64748b] sm:text-[0.95rem] sm:leading-relaxed">{pr.bio}</p>
             </section>
           ) : null}
@@ -115,14 +118,16 @@ export function PractitionerProfileView({
                 <Star className="size-5 fill-amber-400/30 text-amber-600" strokeWidth={2} aria-hidden />
               </div>
               <div>
-                <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">Patient reviews</h2>
-                <p className="mt-1 text-sm text-[#64748b]">Recent feedback from completed visits.</p>
+                <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
+                  {t('patient.practitionerProfile.patientReviews')}
+                </h2>
+                <p className="mt-1 text-sm text-[#64748b]">{t('patient.practitionerProfile.reviewsHint')}</p>
               </div>
             </div>
 
             {(profile.data?.reviews ?? []).length === 0 ? (
               <p className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-center text-sm text-[#64748b]">
-                No reviews yet.
+                {t('patient.practitionerProfile.noReviews')}
               </p>
             ) : (
               <ul className="mt-6 space-y-4">
@@ -131,7 +136,7 @@ export function PractitionerProfileView({
                   const patient = isRecord(rev.patient) ? rev.patient : null;
                   const who = patient
                     ? `${String(patient.firstName ?? '')} ${String(patient.lastName ?? '').slice(0, 1)}.`
-                    : 'Patient';
+                    : t('patient.practitionerProfile.patient');
                   const r = typeof rev.rating === 'number' ? rev.rating : Number(rev.rating);
                   const stars = Number.isFinite(r) ? r : 0;
                   const initial = who.trim().charAt(0).toUpperCase() || 'P';
@@ -158,7 +163,7 @@ export function PractitionerProfileView({
                           {typeof rev.comment === 'string' && rev.comment.trim() ? (
                             <p className="mt-3 text-[15px] leading-relaxed text-[#64748b]">{rev.comment}</p>
                           ) : (
-                            <p className="mt-2 text-sm italic text-[#64748b]/80">No written comment.</p>
+                            <p className="mt-2 text-sm italic text-[#64748b]/80">{t('patient.practitionerProfile.noComment')}</p>
                           )}
                         </div>
                       </div>

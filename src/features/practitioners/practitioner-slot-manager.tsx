@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addMinutes, addDays, format, startOfDay } from 'date-fns';
 import { Trash2 } from 'lucide-react';
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,7 @@ function PractitionerSlotManagerDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const today = useMemo(() => startOfDay(new Date()), []);
   const rangeTo = useMemo(() => addDays(today, 42), [today]);
@@ -110,7 +112,7 @@ function PractitionerSlotManagerDialog({
   const createMut = useMutation({
     mutationFn: createPractitionerSlot,
     onSuccess: async () => {
-      toast.success('Open slot added');
+      toast.success(t('practitioner.slots.dialog.slotAdded'));
       await qc.invalidateQueries({ queryKey: practitionerOpenSlotsQueryKey(today, rangeTo) });
     },
     onError: (e) => toast.error(errMessage(e)),
@@ -119,7 +121,7 @@ function PractitionerSlotManagerDialog({
   const deleteMut = useMutation({
     mutationFn: deletePractitionerSlot,
     onSuccess: async () => {
-      toast.success('Slot removed');
+      toast.success(t('practitioner.slots.dialog.slotRemoved'));
       setSlotToDelete(null);
       await qc.invalidateQueries({ queryKey: practitionerOpenSlotsQueryKey(today, rangeTo) });
     },
@@ -141,7 +143,7 @@ function PractitionerSlotManagerDialog({
     const start = combineLocalDateAndTime(dateStr, timeStr);
     const end = addMinutes(start, durationMin);
     if (end.getTime() <= start.getTime()) {
-      toast.error('End time must be after start');
+      toast.error(t('practitioner.slots.dialog.endAfterStart'));
       return;
     }
     createMut.mutate({ startTime: start, endTime: end });
@@ -155,22 +157,19 @@ function PractitionerSlotManagerDialog({
         <DialogContent className="max-h-[min(90vh,720px)] max-w-2xl overflow-y-auto p-0 sm:max-w-2xl">
           <div className="border-b border-[#e2e8f0] p-6 pb-4">
             <DialogHeader className="pr-6">
-              <DialogTitle>Visit availability</DialogTitle>
-              <DialogDescription>
-                Add bookable time for patients. Open slots appear on your public profile once you&apos;re verified.
-                Remove a slot anytime if it is still open and unbooked.
-              </DialogDescription>
+              <DialogTitle>{t('practitioner.slots.dialog.title')}</DialogTitle>
+              <DialogDescription>{t('practitioner.slots.dialog.description')}</DialogDescription>
             </DialogHeader>
           </div>
 
           <div className="grid gap-8 p-6 md:grid-cols-2">
             <div>
-              <h3 className="text-sm font-semibold text-[#0a1628]">Add a slot</h3>
-              <p className="mt-1 text-xs text-[#64748b]">Pick a date, start time, and length. We save it in your local timezone.</p>
+              <h3 className="text-sm font-semibold text-[#0a1628]">{t('practitioner.slots.dialog.addTitle')}</h3>
+              <p className="mt-1 text-xs text-[#64748b]">{t('practitioner.slots.dialog.addHint')}</p>
               <form className="mt-4 space-y-4" onSubmit={handleCreate}>
                 <div className="space-y-1.5">
                   <Label htmlFor="slot-date" className="text-xs font-medium text-[#475569]">
-                    Date
+                    {t('practitioner.slots.dialog.date')}
                   </Label>
                   <Input
                     id="slot-date"
@@ -184,7 +183,7 @@ function PractitionerSlotManagerDialog({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="slot-start" className="text-xs font-medium text-[#475569]">
-                    Start time
+                    {t('practitioner.slots.dialog.startTime')}
                   </Label>
                   <Input
                     id="slot-start"
@@ -197,7 +196,7 @@ function PractitionerSlotManagerDialog({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="slot-duration" className="text-xs font-medium text-[#475569]">
-                    Duration
+                    {t('practitioner.slots.dialog.duration')}
                   </Label>
                   <select
                     id="slot-duration"
@@ -210,7 +209,7 @@ function PractitionerSlotManagerDialog({
                   >
                     {DURATIONS.map((m) => (
                       <option key={m} value={m}>
-                        {m} minutes
+                        {t('practitioner.slots.dialog.minutes', { count: m })}
                       </option>
                     ))}
                   </select>
@@ -220,24 +219,26 @@ function PractitionerSlotManagerDialog({
                   disabled={createMut.isPending}
                   className="w-full bg-gradient-to-br from-teal-500 to-teal-700 text-white hover:from-teal-600 hover:to-teal-800"
                 >
-                  {createMut.isPending ? 'Saving…' : 'Add open slot'}
+                  {createMut.isPending ? t('practitioner.slots.dialog.saving') : t('practitioner.slots.dialog.addOpenSlot')}
                 </Button>
               </form>
             </div>
 
             <div className="flex min-h-0 flex-col border-t border-[#e2e8f0] pt-6 md:border-l md:border-t-0 md:pl-6 md:pt-0">
-              <h3 className="text-sm font-semibold text-[#0a1628]">Upcoming open slots</h3>
+              <h3 className="text-sm font-semibold text-[#0a1628]">{t('practitioner.slots.dialog.upcomingTitle')}</h3>
               <p className="mt-1 text-xs text-[#64748b]">
-                {slotsQuery.isFetching ? 'Refreshing…' : `${items.length} in the next ~6 weeks`}
+                {slotsQuery.isFetching
+                  ? t('practitioner.slots.dialog.refreshing')
+                  : t('practitioner.slots.dialog.inNextWeeks', { count: items.length })}
               </p>
               <div className="mt-3 max-h-[280px] flex-1 space-y-2 overflow-y-auto pr-1">
-                {slotsQuery.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
+                {slotsQuery.isLoading ? <p className="text-sm text-muted-foreground">{t('practitioner.slots.dialog.loading')}</p> : null}
                 {slotsQuery.isError ? (
-                  <p className="text-sm text-destructive">Could not load your slots.</p>
+                  <p className="text-sm text-destructive">{t('practitioner.slots.dialog.couldNotLoad')}</p>
                 ) : null}
                 {!slotsQuery.isLoading && !items.length && slotsQuery.isSuccess ? (
                   <p className="rounded-lg border border-dashed border-[#e2e8f0] bg-[#f8fafc] p-4 text-sm text-[#64748b]">
-                    No open slots yet. Add times on the left so patients can book you.
+                    {t('practitioner.slots.dialog.empty')}
                   </p>
                 ) : null}
                 {items.map((row) => {
@@ -255,7 +256,9 @@ function PractitionerSlotManagerDialog({
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-medium text-[#0a1628]">{label}</p>
                         <p className="text-[11px] text-[#64748b]">
-                          {typeof row.durationMinutes === 'number' ? `${row.durationMinutes} min` : 'Open'}
+                          {typeof row.durationMinutes === 'number'
+                            ? `${row.durationMinutes} min`
+                            : t('practitioner.slots.dialog.open')}
                         </p>
                       </div>
                       <Button
@@ -263,7 +266,7 @@ function PractitionerSlotManagerDialog({
                         variant="ghost"
                         size="icon"
                         className="h-9 w-9 shrink-0 text-[#64748b] hover:bg-rose-50 hover:text-rose-600"
-                        title="Remove slot"
+                        title={t('practitioner.slots.dialog.removeSlotTitle')}
                         onClick={() => setSlotToDelete({ id, label })}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -277,7 +280,7 @@ function PractitionerSlotManagerDialog({
 
           <DialogFooter className="border-t border-[#e2e8f0] bg-[#f8fafc] px-6 py-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Done
+              {t('practitioner.slots.dialog.done')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -286,17 +289,14 @@ function PractitionerSlotManagerDialog({
       <ConfirmDialog
         open={Boolean(slotToDelete)}
         onOpenChange={(o) => !o && setSlotToDelete(null)}
-        title="Remove this open slot?"
+        title={t('practitioner.slots.dialog.removeConfirmTitle')}
         description={
           slotToDelete ? (
-            <span>
-              Patients will no longer see <span className="font-medium text-[#0a1628]">{slotToDelete.label}</span>.
-              This only works if the slot is not already booked.
-            </span>
+            <span>{t('practitioner.slots.dialog.removeConfirmDesc', { label: slotToDelete.label })}</span>
           ) : null
         }
-        confirmLabel="Remove slot"
-        cancelLabel="Keep slot"
+        confirmLabel={t('practitioner.slots.dialog.removeConfirm')}
+        cancelLabel={t('practitioner.slots.dialog.keepSlot')}
         variant="destructive"
         onConfirm={async () => {
           if (!slotToDelete) return;
@@ -315,6 +315,7 @@ export function PractitionerOpenSlotsSummary({
   maxItems?: number;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const { openSlotManager } = usePractitionerSlotManager();
   const today = useMemo(() => startOfDay(new Date()), []);
   const rangeTo = useMemo(() => addDays(today, 42), [today]);
@@ -348,10 +349,13 @@ export function PractitionerOpenSlotsSummary({
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
-            Open visit <em className="not-italic text-teal-700">slots</em>
+            {t('practitioner.slots.title')}{' '}
+            <em className="not-italic text-teal-700">{t('practitioner.slots.titleEm')}</em>
           </h2>
           <p className="mt-1 text-xs text-[#64748b]">
-            {q.isSuccess ? `${items.length} open in the next few weeks` : 'Your bookable availability'}
+            {q.isSuccess
+              ? t('practitioner.slots.openCount', { count: items.length })
+              : t('practitioner.slots.subtitle')}
           </p>
         </div>
         <Button
@@ -360,12 +364,12 @@ export function PractitionerOpenSlotsSummary({
           className="rounded-[9px] bg-gradient-to-br from-teal-500 to-teal-700 text-white shadow-sm hover:from-teal-600 hover:to-teal-800"
           onClick={openSlotManager}
         >
-          Add / manage
+          {t('practitioner.slots.addManage')}
         </Button>
       </div>
 
-      {q.isLoading ? <p className="text-sm text-muted-foreground">Loading slots…</p> : null}
-      {q.isError ? <p className="text-sm text-destructive">Could not load slots.</p> : null}
+      {q.isLoading ? <p className="text-sm text-muted-foreground">{t('practitioner.slots.loading')}</p> : null}
+      {q.isError ? <p className="text-sm text-destructive">{t('practitioner.slots.couldNotLoad')}</p> : null}
 
       {slice.length ? (
         <ul className="divide-y divide-[#eef1f6] rounded-xl border border-[#e2e8f0] bg-[#fafbfc]">
@@ -387,7 +391,7 @@ export function PractitionerOpenSlotsSummary({
           })}
         </ul>
       ) : q.isSuccess ? (
-        <p className="text-sm text-muted-foreground">No open slots yet — add some so patients can book.</p>
+        <p className="text-sm text-muted-foreground">{t('practitioner.slots.empty')}</p>
       ) : null}
 
       {items.length > maxItems ? (
@@ -396,7 +400,7 @@ export function PractitionerOpenSlotsSummary({
           className="mt-3 text-xs font-medium text-teal-800 hover:underline"
           onClick={openSlotManager}
         >
-          View all {items.length} slots
+          {t('practitioner.slots.viewAll', { count: items.length })}
         </button>
       ) : null}
     </div>

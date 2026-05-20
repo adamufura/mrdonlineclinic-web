@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 function GoogleGlyph({ className }: { className?: string }) {
@@ -54,12 +55,13 @@ function SocialButton({
 }
 
 export function AuthSocialButtons() {
-  const soon = () => toast.info('Social sign-in is not wired yet — use email for now.');
+  const { t } = useTranslation();
+  const soon = () => toast.info(t('auth.social.notWired'));
 
   return (
     <div className="grid grid-cols-2 gap-2.5">
-      <SocialButton label="Google" icon={<GoogleGlyph />} onClick={soon} />
-      <SocialButton label="Apple" icon={<AppleGlyph className="text-slate-900" />} onClick={soon} />
+      <SocialButton label={t('auth.social.google')} icon={<GoogleGlyph />} onClick={soon} />
+      <SocialButton label={t('auth.social.apple')} icon={<AppleGlyph className="text-slate-900" />} onClick={soon} />
     </div>
   );
 }

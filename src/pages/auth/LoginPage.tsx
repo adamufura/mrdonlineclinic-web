@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -15,18 +16,15 @@ import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { login } from '@/features/auth/api';
+import { setAppLanguage } from '@/i18n';
+import type { AppLanguage } from '@/types/language';
 import { safeReturnPath } from '@/lib/navigation';
 import { normalizeAxiosError } from '@/lib/api/errors';
 import { ROUTES } from '@/router/routes';
 import { useAuthStore } from '@/stores/auth-store';
 import type { AuthRole } from '@/types/api';
 
-const schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1, 'Password is required'),
-});
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = { email: string; password: string };
 
 function homeForRole(role: AuthRole): string {
   if (role === 'PATIENT') return ROUTES.patient.dashboard;
@@ -35,10 +33,20 @@ function homeForRole(role: AuthRole): string {
 }
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
   const [remember, setRemember] = useState(true);
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(),
+        password: z.string().min(1, t('auth.validation.passwordRequired')),
+      }),
+    [t],
+  );
 
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '', password: '' } });
   const setEmail = form.setValue;
@@ -47,7 +55,7 @@ export default function LoginPage() {
     const raw = searchParams.get('email');
     if (!raw) return;
     const decoded = decodeURIComponent(raw.trim());
-    const parsed = schema.shape.email.safeParse(decoded);
+    const parsed = z.string().email().safeParse(decoded);
     if (!parsed.success) return;
     setEmail('email', parsed.data);
     const next = new URLSearchParams(searchParams);
@@ -59,7 +67,9 @@ export default function LoginPage() {
     mutationFn: login,
     onSuccess: (data) => {
       setSession(data.user, data.tokens.accessToken);
-      toast.success('Welcome back');
+      const lang = (data.user.preferredLanguage === 'ha' ? 'ha' : 'en') as AppLanguage;
+      void setAppLanguage(lang);
+      toast.success(t('auth.login.welcomeBack'));
       const next = safeReturnPath(searchParams.get('returnUrl')) ?? homeForRole(data.user.role);
       void navigate(next, { replace: true });
     },
@@ -72,16 +82,14 @@ export default function LoginPage() {
   return (
     <>
       <Helmet>
-        <title>Log in — MRD Online Clinic</title>
+        <title>{t('auth.login.title')}</title>
       </Helmet>
       <div className="space-y-1">
-        <AuthEyebrow>Returning to MRD</AuthEyebrow>
+        <AuthEyebrow>{t('auth.login.eyebrow')}</AuthEyebrow>
         <h1 className="font-display text-[clamp(2rem,4.5vw,2.75rem)] font-normal leading-[1.06] tracking-[-0.02em] text-brand-navy">
-          Sign in to your <em className="text-brand-hero-blue not-italic">account.</em>
+          {t('auth.login.heading')} <em className="text-brand-hero-blue not-italic">{t('auth.login.headingEm')}</em>
         </h1>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-brand-body">
-          Pick up exactly where you left off — your messages, appointments, and prescriptions.
-        </p>
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-brand-body">{t('auth.login.intro')}</p>
       </div>
 
       <form
@@ -98,7 +106,7 @@ export default function LoginPage() {
       >
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-[12px] font-medium text-slate-700">
-            Email address
+            {t('auth.login.email')}
           </Label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -118,7 +126,7 @@ export default function LoginPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="password" className="text-[12px] font-medium text-slate-700">
-            Password
+            {t('auth.login.password')}
           </Label>
           <PasswordInput
             id="password"
@@ -141,10 +149,10 @@ export default function LoginPage() {
               onChange={(e) => setRemember(e.target.checked)}
               className="size-4 rounded border-slate-300 accent-sky-500"
             />
-            Remember me for 30 days
+            {t('auth.login.remember')}
           </label>
           <Link to={ROUTES.forgotPassword} className="text-[13px] font-semibold text-sky-800 hover:underline">
-            Forgot password?
+            {t('auth.login.forgotPassword')}
           </Link>
         </div>
 
@@ -153,18 +161,18 @@ export default function LoginPage() {
           disabled={mutation.isPending}
           className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sky-500 to-sky-800 text-[14px] font-semibold text-white shadow-[0_8px_20px_rgba(14,165,233,0.28)] transition hover:brightness-[1.03] disabled:opacity-60"
         >
-          {mutation.isPending ? 'Signing in…' : 'Sign in'}
+          {mutation.isPending ? t('auth.login.signingIn') : t('auth.login.signIn')}
           {!mutation.isPending ? <ArrowRight className="size-4" strokeWidth={2.5} aria-hidden /> : null}
         </Button>
       </form>
 
-      <AuthDividerOr label="Or" />
+      <AuthDividerOr label={t('auth.or')} />
       <AuthSocialButtons />
 
       <p className="mt-6 text-center text-[13px] text-brand-body">
-        New to MRD?{' '}
+        {t('auth.login.newTo')}{' '}
         <Link to={ROUTES.register} className="font-semibold text-sky-800 hover:underline">
-          Create an account
+          {t('auth.login.createAccount')}
         </Link>
       </p>
     </>

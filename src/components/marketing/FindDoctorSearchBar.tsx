@@ -1,6 +1,7 @@
 import { format, isValid, parseISO } from 'date-fns';
 import { Calendar, ChevronDown, Loader2, MapPin, Search } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import type { DirectorySort } from '@/features/practitioners/public-api';
 import type { SpecialtyDto } from '@/features/specialties/api';
@@ -44,6 +45,7 @@ export function FindDoctorSearchBar({
   specialtiesLoading,
   isApplying,
 }: FindDoctorSearchBarProps) {
+  const { t } = useTranslation();
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   const openDatePicker = useCallback(() => {
@@ -70,7 +72,7 @@ export function FindDoctorSearchBar({
   }
 
   const displayedDate = formatDisplayDate(draft.date);
-  const dateAccessibleLabel = 'Preferred appointment date';
+  const dateAccessibleLabel = t('patient.findDoctor.dateLabel');
 
   const segmentBase = cn(
     'relative flex min-h-[3.75rem] w-full items-center gap-2.5 rounded-xl border border-[#edf0f5] bg-white px-3 py-2.5 shadow-sm',
@@ -103,7 +105,7 @@ export function FindDoctorSearchBar({
           type="search"
           value={draft.search}
           onChange={(e) => onDraftChange({ search: e.target.value })}
-          placeholder="Search doctors, clinics…"
+          placeholder={t('patient.findDoctor.searchPlaceholder')}
           className={cn(inputCls, 'accent-sky-500')}
           autoComplete="off"
         />
@@ -117,7 +119,7 @@ export function FindDoctorSearchBar({
           type="text"
           value={draft.location}
           onChange={(e) => onDraftChange({ location: e.target.value })}
-          placeholder="Location"
+          placeholder={t('patient.findDoctor.locationPlaceholder')}
           className={cn(inputCls, 'accent-sky-500')}
           autoComplete="off"
         />
@@ -129,7 +131,9 @@ export function FindDoctorSearchBar({
         role="button"
         tabIndex={0}
         aria-label={
-          displayedDate ? `${dateAccessibleLabel}, ${displayedDate}` : `${dateAccessibleLabel}, choose a date`
+          displayedDate
+            ? `${dateAccessibleLabel}, ${displayedDate}`
+            : `${dateAccessibleLabel}, ${t('patient.findDoctor.chooseDate')}`
         }
         aria-haspopup="dialog"
         onClick={openDatePicker}
@@ -155,7 +159,7 @@ export function FindDoctorSearchBar({
           <span
             className={cn(dateLabelCls, 'tabular-nums', displayedDate ? 'text-brand-navy' : 'text-[#9ca3af]')}
           >
-            {displayedDate || 'Date'}
+            {displayedDate || t('patient.findDoctor.datePlaceholder')}
           </span>
         </div>
       </div>
@@ -168,9 +172,9 @@ export function FindDoctorSearchBar({
           onChange={(e) => onDraftChange({ specialtyId: e.target.value })}
           disabled={specialtiesLoading}
           className={selectKit}
-          aria-label="Specialty"
+          aria-label={t('patient.findDoctor.specialty')}
         >
-          <option value="">All specialties</option>
+          <option value="">{t('patient.findDoctor.allSpecialties')}</option>
           {specialties?.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -190,11 +194,11 @@ export function FindDoctorSearchBar({
           value={draft.sort}
           onChange={(e) => onDraftChange({ sort: e.target.value as DirectorySort })}
           className={cn(selectKit, 'pr-9')}
-          aria-label="Sort by"
+          aria-label={t('patient.findDoctor.sortBy')}
         >
-          <option value="rating">Top rated</option>
-          <option value="experience">Experience</option>
-          <option value="createdAt">Newest</option>
+          <option value="rating">{t('patient.findDoctor.sortTopRated')}</option>
+          <option value="experience">{t('patient.findDoctor.sortExperience')}</option>
+          <option value="createdAt">{t('patient.findDoctor.sortNewest')}</option>
         </select>
         <ChevronDown
           className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]"
@@ -215,10 +219,10 @@ export function FindDoctorSearchBar({
           {isApplying ? (
             <>
               <Loader2 className="mr-2 size-4 shrink-0 animate-spin" aria-hidden />
-              Searching
+              {t('patient.findDoctor.searching')}
             </>
           ) : (
-            'Search'
+            t('patient.findDoctor.search')
           )}
         </Button>
       </div>

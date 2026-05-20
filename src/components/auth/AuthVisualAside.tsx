@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { AuthHeroIllustration } from '@/components/auth/AuthHeroIllustration';
@@ -14,19 +15,20 @@ function asideMode(pathname: string): AsideMode {
 }
 
 function TestimonialBlock() {
+  const { t } = useTranslation();
   return (
     <div className="relative z-10 rounded-[18px] border border-white/[0.08] bg-white/[0.04] px-5 py-5 backdrop-blur-md sm:px-6">
       <p className="font-display text-lg font-normal leading-snug tracking-tight text-white sm:text-[1.15rem]">
         <span className="mr-1 font-serif text-3xl leading-none text-teal-300">&ldquo;</span>
-        Booked at 8am, spoke with Dr. Adeyemi by 9, prescription at my pharmacy by lunchtime. This is how care should work.
+        {t('auth.aside.testimonialQuote')}
       </p>
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-300 to-sky-400 font-display text-sm font-semibold text-slate-900">
           N
         </div>
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="text-[13px] font-semibold text-white">Nneka I.</p>
-          <p className="text-xs text-white/55">Patient · Lagos</p>
+          <p className="text-[13px] font-semibold text-white">{t('auth.aside.testimonialName')}</p>
+          <p className="text-xs text-white/55">{t('auth.aside.testimonialRole')}</p>
         </div>
         <div className="ml-auto flex gap-0.5 text-teal-300">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -39,31 +41,30 @@ function TestimonialBlock() {
 }
 
 function SignupFooter() {
+  const { t } = useTranslation();
   return (
     <div className="relative z-10 space-y-6">
       <div className="border-t border-white/[0.08] pt-6">
-        <p className="max-w-[22rem] text-[15px] leading-relaxed text-white/90">
-          Pick up exactly where you left off — your messages, appointments, and prescriptions.
-        </p>
+        <p className="max-w-[22rem] text-[15px] leading-relaxed text-white/90">{t('auth.aside.signupIntro')}</p>
       </div>
       <div className="grid grid-cols-3 gap-2 border-t border-white/[0.08] pt-5 text-white">
         <div>
           <p className="font-display text-2xl font-medium tracking-tight">
             12k<em className="text-lg not-italic text-teal-300">+</em>
           </p>
-          <p className="text-[11px] uppercase tracking-wider text-white/55">Patients seen</p>
+          <p className="text-[11px] uppercase tracking-wider text-white/55">{t('auth.aside.statPatients')}</p>
         </div>
         <div>
           <p className="font-display text-2xl font-medium tracking-tight">
             340<em className="text-lg not-italic text-teal-300">+</em>
           </p>
-          <p className="text-[11px] uppercase tracking-wider text-white/55">Verified doctors</p>
+          <p className="text-[11px] uppercase tracking-wider text-white/55">{t('auth.aside.statDoctors')}</p>
         </div>
         <div>
           <p className="font-display text-2xl font-medium tracking-tight">
             9<em className="text-lg not-italic text-teal-300">m</em>
           </p>
-          <p className="text-[11px] uppercase tracking-wider text-white/55">Avg. wait time</p>
+          <p className="text-[11px] uppercase tracking-wider text-white/55">{t('auth.aside.statWait')}</p>
         </div>
       </div>
     </div>
@@ -71,10 +72,12 @@ function SignupFooter() {
 }
 
 function DefaultFooter() {
+  const { t } = useTranslation();
   return (
     <div className="relative z-10 border-t border-white/[0.08] pt-6">
       <p className="max-w-sm font-display text-lg font-light leading-snug text-white/90">
-        Your records, <em className="text-sky-300 not-italic">your doctor</em>, exactly where you left them.
+        {t('auth.aside.defaultTaglineLead')}{' '}
+        <em className="text-sky-300 not-italic">{t('auth.aside.defaultTaglineEm')}</em>, {t('auth.aside.defaultTaglineTail')}
       </p>
     </div>
   );

@@ -21,8 +21,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { getMessageDisplayText, getMessagePreviewText } from '@/lib/chat/message-display';
 import { profilePhotoFrom, UserAvatar } from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,6 +78,7 @@ export type MessagingWorkspaceProps = {
 };
 
 export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: MessagingWorkspaceProps) {
+  const { t } = useTranslation();
   const { roomId } = useParams<{ roomId?: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -85,7 +88,17 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
 
   const [listFilter, setListFilter] = useState<'all' | 'unread'>('all');
   const [search, setSearch] = useState('');
+  const [showOriginalIds, setShowOriginalIds] = useState<Set<string>>(() => new Set());
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  const toggleShowOriginal = useCallback((messageId: string) => {
+    setShowOriginalIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(messageId)) next.delete(messageId);
+      else next.add(messageId);
+      return next;
+    });
+  }, []);
 
   const roomsQuery = useQuery({
     queryKey: ['chat', 'rooms', { page: 1, limit: 60 }],
@@ -269,11 +282,8 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
               {!roomsQuery.isLoading && filteredRooms.length === 0 ? (
                 <div className="mx-4 mt-10 rounded-2xl border border-dashed border-[#c5d5eb] bg-sky-50/40 px-4 py-10 text-center">
                   <Stethoscope className="mx-auto h-8 w-8 text-sky-400" />
-                  <p className="mt-3 text-sm font-medium text-[#0a1628]">No conversations yet</p>
-                  <p className="mt-2 text-xs leading-relaxed text-[#64748b]">
-                    When a practitioner confirms an appointment, a secure chat opens so you can coordinate before and
-                    after your visit.
-                  </p>
+                  <p className="mt-3 text-sm font-medium text-[#0a1628]">{t('chat.noConversations')}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-[#64748b]">{t('chat.noConversationsHint')}</p>
                 </div>
               ) : null}
 
@@ -283,10 +293,10 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                   const id = String(raw._id);
                   const o = isRecord(raw.otherParticipant) ? (raw.otherParticipant as Record<string, unknown>) : null;
                   const last = isRecord(raw.lastMessage) ? (raw.lastMessage as Record<string, unknown>) : null;
-                  const preview =
-                    typeof last?.content === 'string' && last.content.trim()
-                      ? last.content.trim()
-                      : 'No messages yet';
+                  const previewText = getMessagePreviewText(
+                    last as { content?: string; displayContent?: string } | null,
+                  );
+                  const preview = previewText || t('chat.noMessagesYet');
                   const ts = last?.createdAt ? new Date(String(last.createdAt)) : raw.lastMessageAt
                     ? new Date(String(raw.lastMessageAt))
                     : null;
@@ -347,23 +357,23 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                 <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-sky-100 to-teal-100 text-sky-700">
                   <MessageCircle className="h-8 w-8" strokeWidth={1.5} />
                 </div>
-                <p className="mt-5 font-display text-lg font-medium text-[#0a1628]">Select a conversation</p>
-                <p className="mt-2 text-sm leading-relaxed text-[#64748b]">Pick someone from the list to read and send messages.</p>
+                <p className="mt-5 font-display text-lg font-medium text-[#0a1628]">{t('chat.selectConversation')}</p>
+                <p className="mt-2 text-sm leading-relaxed text-[#64748b]">{t('chat.selectConversationHint')}</p>
               </div>
             ) : null}
 
             {roomId && roomQuery.isLoading ? (
               <div className="flex flex-1 items-center justify-center gap-2 text-[#64748b]">
                 <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
-                Opening chat…
+                {t('chat.openingChat')}
               </div>
             ) : null}
 
             {roomId && roomQuery.isError ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-                <p className="text-sm text-destructive">Could not open this chat.</p>
+                <p className="text-sm text-destructive">{t('chat.couldNotOpen')}</p>
                 <Button variant="outline" size="sm" onClick={closeRoom}>
-                  Back
+                  {t('chat.back')}
                 </Button>
               </div>
             ) : null}
@@ -431,7 +441,7 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                     </div>
                   ) : null}
                   {messagesQuery.isError ? (
-                    <p className="text-center text-sm text-destructive">Messages could not be loaded.</p>
+                    <p className="text-center text-sm text-destructive">{t('chat.messagesCouldNotLoad')}</p>
                   ) : null}
                   <div className="mx-auto max-w-[720px] space-y-3">
                     {rows.map((row, i) => {
@@ -446,16 +456,31 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                       }
                       const m = row.m;
                       const mine = Boolean(myId && senderId(m) === myId);
-                      const t = m.createdAt ? format(new Date(String(m.createdAt)), 'h:mm a') : '';
-                      const body = typeof m.content === 'string' ? m.content : '';
+                      const msgTime = m.createdAt ? format(new Date(String(m.createdAt)), 'h:mm a') : '';
+                      const msgId = String(m._id ?? i);
+                      const msgRecord = m as Record<string, unknown> & {
+                        content?: string;
+                        displayContent?: string;
+                        originalContent?: string;
+                        isTranslated?: boolean;
+                      };
+                      const showOriginal = showOriginalIds.has(msgId);
+                      const body = getMessageDisplayText(msgRecord, showOriginal);
                       const msgType = typeof m.messageType === 'string' ? m.messageType : 'TEXT';
                       const attachments = Array.isArray(m.attachments) ? m.attachments : [];
+                      const canToggleOriginal = Boolean(msgRecord.isTranslated);
 
                       return (
-                        <div key={String(m._id ?? i)} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
+                        <div
+                          key={msgId}
+                          className={cn(
+                            'flex max-w-[min(85%,22rem)] flex-col gap-0.5',
+                            mine ? 'ml-auto items-end' : 'mr-auto items-start',
+                          )}
+                        >
                           <div
                             className={cn(
-                              'max-w-[85%] rounded-2xl shadow-sm',
+                              'inline-block min-w-[10rem] max-w-full rounded-2xl shadow-sm',
                               mine
                                 ? 'rounded-br-md bg-gradient-to-br from-sky-500 to-sky-700 text-white'
                                 : 'rounded-bl-md border border-[#e8edf4] bg-white text-[#0a1628]',
@@ -485,22 +510,38 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
 
                             {/* Text message */}
                             {msgType === 'TEXT' ? (
-                              <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">{body}</p>
+                              <p className="whitespace-pre-wrap text-[13px] leading-relaxed [overflow-wrap:break-word] [word-break:normal]">
+                                {body}
+                              </p>
                             ) : null}
                             {msgType !== 'TEXT' && msgType !== 'IMAGE' && msgType !== 'VOICE' && msgType !== 'CALL' ? (
-                              <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">{body}</p>
+                              <p className="whitespace-pre-wrap text-[13px] leading-relaxed [overflow-wrap:break-word] [word-break:normal]">
+                                {body}
+                              </p>
                             ) : null}
-
-                            <p
-                              className={cn(
-                                'mt-1 text-[10px] font-medium tabular-nums',
-                                mine ? 'text-sky-100' : 'text-[#94a3b8]',
-                                msgType === 'IMAGE' && 'px-2 pb-1',
-                              )}
-                            >
-                              {t}
-                            </p>
                           </div>
+                        {msgTime ? (
+                          <p
+                            className={cn(
+                              'px-1 text-[10px] font-medium tabular-nums',
+                              mine ? 'text-sky-600/80' : 'text-[#94a3b8]',
+                            )}
+                          >
+                            {msgTime}
+                          </p>
+                        ) : null}
+                        {canToggleOriginal ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleShowOriginal(msgId)}
+                            className={cn(
+                              'px-1 text-[10px] font-medium underline-offset-2 hover:underline',
+                              mine ? 'text-sky-600' : 'text-sky-600',
+                            )}
+                          >
+                            {showOriginal ? t('chat.viewTranslation') : t('chat.viewOriginal')}
+                          </button>
+                        ) : null}
                         </div>
                       );
                     })}
@@ -510,7 +551,7 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
 
                 <footer className="shrink-0 border-t border-[#e2e8f0] bg-white px-3 py-3 sm:px-5">
                   {isLocked ? (
-                    <p className="text-center text-xs text-[#64748b]">This conversation is closed after your visit was completed.</p>
+                    <p className="text-center text-xs text-[#64748b]">{t('chat.chatClosed')}</p>
                   ) : (
                     <ChatComposer
                       roomId={roomId!}
@@ -531,8 +572,8 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
           {/* Context panel — desktop */}
           <aside className="hidden w-[300px] shrink-0 flex-col border-l border-[#e2e8f0] bg-white xl:flex">
             <div className="border-b border-[#e2e8f0] px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">Visit</p>
-              <p className="mt-1 font-medium text-[#0a1628]">Details</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">{t('common.visit')}</p>
+              <p className="mt-1 font-medium text-[#0a1628]">{t('chat.details')}</p>
             </div>
             {roomId && appointment ? (
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">

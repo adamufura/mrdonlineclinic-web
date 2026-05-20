@@ -4,6 +4,7 @@ import { Camera, ExternalLink, Loader2, Lock, PenLine, Stethoscope, UserRound } 
 import { Helmet } from 'react-helmet-async';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -87,6 +88,7 @@ function Field({
 }
 
 export default function PractitionerProfilePage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const authUser = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
@@ -132,7 +134,7 @@ export default function PractitionerProfilePage() {
   const savePersonal = useMutation({
     mutationFn: (values: PractitionerPersonalProfileValues) => patchPractitionerProfile(values),
     onSuccess: async () => {
-      toast.success('Personal details saved');
+      toast.success(t('practitioner.profile.personalSaved'));
       await qc.invalidateQueries({ queryKey: ['practitioners', 'me'] });
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
@@ -142,7 +144,7 @@ export default function PractitionerProfilePage() {
     mutationFn: (values: PractitionerProfessionalProfileValues) =>
       patchPractitionerProfile(professionalFormToPatch(values)),
     onSuccess: async () => {
-      toast.success('Professional profile saved');
+      toast.success(t('practitioner.profile.professionalSaved'));
       await qc.invalidateQueries({ queryKey: ['practitioners', 'me'] });
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
@@ -155,7 +157,7 @@ export default function PractitionerProfilePage() {
       if (current) {
         setUser({ ...current, profilePhotoUrl: result.profilePhotoUrl });
       }
-      toast.success('Photo updated');
+      toast.success(t('practitioner.profile.photoUpdated'));
       await qc.invalidateQueries({ queryKey: ['practitioners', 'me'] });
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
@@ -164,7 +166,7 @@ export default function PractitionerProfilePage() {
   const uploadSignature = useMutation({
     mutationFn: (file: File) => uploadPractitionerSignature(file),
     onSuccess: async () => {
-      toast.success('Signature saved — it will appear on prescription receipts');
+      toast.success(t('practitioner.profile.signatureSaved'));
       await qc.invalidateQueries({ queryKey: ['practitioners', 'me'] });
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
@@ -181,7 +183,7 @@ export default function PractitionerProfilePage() {
     onSuccess: async (result) => {
       setAccessToken(result.tokens.accessToken);
       pwdForm.reset();
-      toast.success('Password updated. You are still signed in.');
+      toast.success(t('practitioner.profile.passwordUpdated'));
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
   });
@@ -202,30 +204,30 @@ export default function PractitionerProfilePage() {
   return (
     <>
       <Helmet>
-        <title>My account — MRD Online Clinic</title>
+        <title>{t('practitioner.profile.title')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
       <div className="mx-auto max-w-4xl space-y-8 pb-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-primary">Account</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">My account</h1>
+            <p className="text-xs font-medium uppercase tracking-wide text-primary">{t('practitioner.profile.badge')}</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{t('practitioner.profile.heading')}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Update your name, photo, public directory profile, and password. License verification is under{' '}
+              {t('practitioner.profile.intro')}{' '}
               <Link to={ROUTES.practitioner.profileCredentials} className="font-medium text-primary hover:underline">
-                Credentials
+                {t('practitioner.profile.credentialsLink')}
               </Link>
               .
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm" className="shrink-0 gap-1.5">
-              <Link to={ROUTES.practitioner.profileCredentials}>Credentials</Link>
+              <Link to={ROUTES.practitioner.profileCredentials}>{t('practitioner.profile.credentialsLink')}</Link>
             </Button>
             {authUser?.id ? (
               <Button asChild variant="outline" size="sm" className="shrink-0 gap-1.5">
                 <a href={publicProfileHref} target="_blank" rel="noopener noreferrer">
-                  View public profile
+                  {t('practitioner.profile.viewPublicProfile')}
                   <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                 </a>
               </Button>
@@ -237,15 +239,15 @@ export default function PractitionerProfilePage() {
           <TabsList className="grid h-11 w-full max-w-xl grid-cols-3">
             <TabsTrigger value="personal" className="gap-2">
               <UserRound className="h-4 w-4" aria-hidden />
-              Personal
+              {t('practitioner.profile.tabPersonal')}
             </TabsTrigger>
             <TabsTrigger value="professional" className="gap-2">
               <Stethoscope className="h-4 w-4" aria-hidden />
-              Professional
+              {t('practitioner.profile.tabProfessional')}
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-2">
               <Lock className="h-4 w-4" aria-hidden />
-              Security
+              {t('practitioner.profile.tabSecurity')}
             </TabsTrigger>
           </TabsList>
 
@@ -257,9 +259,10 @@ export default function PractitionerProfilePage() {
                     <UserRound className="h-5 w-5" aria-hidden />
                   </div>
                   <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-lg">Personal information</CardTitle>
+                    <CardTitle className="text-lg">{t('practitioner.profile.personalTitle')}</CardTitle>
                     <CardDescription className="text-sm">
-                      Signed in as <span className="font-medium text-foreground">{authUser?.email}</span>
+                      {t('practitioner.profile.signedInAs')}{' '}
+                      <span className="font-medium text-foreground">{authUser?.email}</span>
                     </CardDescription>
                   </div>
                 </div>
@@ -283,10 +286,8 @@ export default function PractitionerProfilePage() {
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">Profile photo</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Shown on your public profile, messages, and dashboard.
-                    </p>
+                    <p className="text-sm font-medium text-foreground">{t('practitioner.profile.profilePhoto')}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t('practitioner.profile.photoHint')}</p>
                     <input
                       ref={fileRef}
                       type="file"
@@ -315,16 +316,16 @@ export default function PractitionerProfilePage() {
                       disabled={uploadPhoto.isPending}
                       onClick={() => fileRef.current?.click()}
                     >
-                      {uploadPhoto.isPending ? 'Uploading…' : 'Change photo'}
+                      {uploadPhoto.isPending ? t('common.loading') : t('practitioner.profile.changePhoto')}
                     </Button>
-                    <p className="mt-2 text-xs text-muted-foreground">JPG or PNG, max 5MB.</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{t('practitioner.profile.photoFormat')}</p>
                   </div>
                 </div>
 
-                {profile.isLoading ? <p className="text-sm text-muted-foreground">Loading profile…</p> : null}
+                {profile.isLoading ? <p className="text-sm text-muted-foreground">{t('practitioner.profile.loadingProfile')}</p> : null}
                 {profile.isError ? (
                   <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                    Could not load profile.
+                    {t('practitioner.profile.couldNotLoadProfile')}
                   </p>
                 ) : null}
 
@@ -332,22 +333,22 @@ export default function PractitionerProfilePage() {
                   className={cn('space-y-8', profile.isLoading && 'pointer-events-none opacity-60')}
                   onSubmit={personalForm.handleSubmit((v) => savePersonal.mutate(v))}
                 >
-                  <FormSection title="Legal name" description="As it appears on prescriptions and your directory listing.">
+                  <FormSection title={t('practitioner.profile.legalName')} description={t('practitioner.profile.legalNameHint')}>
                     <div className="grid gap-5 md:grid-cols-3">
-                      <Field label="First name" htmlFor="pf-first" error={personalForm.formState.errors.firstName?.message}>
+                      <Field label={t('practitioner.profile.firstName')} htmlFor="pf-first" error={personalForm.formState.errors.firstName?.message}>
                         <Input id="pf-first" autoComplete="given-name" {...personalForm.register('firstName')} />
                       </Field>
-                      <Field label="Middle name" htmlFor="pf-middle" error={personalForm.formState.errors.middleName?.message}>
+                      <Field label={t('practitioner.profile.middleName')} htmlFor="pf-middle" error={personalForm.formState.errors.middleName?.message}>
                         <Input id="pf-middle" autoComplete="additional-name" {...personalForm.register('middleName')} />
                       </Field>
-                      <Field label="Last name" htmlFor="pf-last" error={personalForm.formState.errors.lastName?.message}>
+                      <Field label={t('practitioner.profile.lastName')} htmlFor="pf-last" error={personalForm.formState.errors.lastName?.message}>
                         <Input id="pf-last" autoComplete="family-name" {...personalForm.register('lastName')} />
                       </Field>
                     </div>
                   </FormSection>
 
-                  <FormSection title="Contact">
-                    <Field label="Phone number" htmlFor="pf-phone" error={personalForm.formState.errors.phoneNumber?.message}>
+                  <FormSection title={t('practitioner.profile.contact')}>
+                    <Field label={t('practitioner.profile.phoneNumber')} htmlFor="pf-phone" error={personalForm.formState.errors.phoneNumber?.message}>
                       <Input id="pf-phone" type="tel" autoComplete="tel" placeholder="+234 …" {...personalForm.register('phoneNumber')} />
                     </Field>
                   </FormSection>
@@ -357,10 +358,10 @@ export default function PractitionerProfilePage() {
                       {savePersonal.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving…
+                          {t('common.loading')}
                         </>
                       ) : (
-                        'Save changes'
+                        t('practitioner.profile.saveChanges')
                       )}
                     </Button>
                   </div>
@@ -377,10 +378,8 @@ export default function PractitionerProfilePage() {
                     <Stethoscope className="h-5 w-5" aria-hidden />
                   </div>
                   <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-lg">Professional profile</CardTitle>
-                    <CardDescription className="text-sm">
-                      What patients see when they find you on the directory.
-                    </CardDescription>
+                    <CardTitle className="text-lg">{t('practitioner.profile.professionalTitle')}</CardTitle>
+                    <CardDescription className="text-sm">{t('practitioner.profile.professionalHint')}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -389,18 +388,18 @@ export default function PractitionerProfilePage() {
                   className={cn('space-y-8', profile.isLoading && 'pointer-events-none opacity-60')}
                   onSubmit={professionalForm.handleSubmit((v) => saveProfessional.mutate(v))}
                 >
-                  <FormSection title="About you">
-                    <Field label="Bio" htmlFor="bio" error={professionalForm.formState.errors.bio?.message}>
+                  <FormSection title={t('practitioner.profile.aboutYou')}>
+                    <Field label={t('practitioner.profile.bio')} htmlFor="bio" error={professionalForm.formState.errors.bio?.message}>
                       <textarea
                         id="bio"
                         rows={4}
                         className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        placeholder="Brief introduction for patients…"
+                        placeholder={t('practitioner.profile.bioPlaceholder')}
                         {...professionalForm.register('bio')}
                       />
                     </Field>
                     <Field
-                      label="Years of experience"
+                      label={t('practitioner.profile.yearsExperience')}
                       htmlFor="yoe"
                       className="mt-4 max-w-xs"
                       error={professionalForm.formState.errors.yearsOfExperience?.message}
@@ -415,9 +414,9 @@ export default function PractitionerProfilePage() {
                     </Field>
                   </FormSection>
 
-                  <FormSection title="Specialties" description="Select all that apply.">
+                  <FormSection title={t('practitioner.profile.specialties')} description={t('practitioner.profile.specialtiesHint')}>
                     {specialtiesQuery.isLoading ? (
-                      <p className="text-sm text-muted-foreground">Loading specialties…</p>
+                      <p className="text-sm text-muted-foreground">{t('practitioner.profile.loadingSpecialties')}</p>
                     ) : null}
                     <div className="grid gap-2 sm:grid-cols-2">
                       {(specialtiesQuery.data ?? []).map((s) => {
@@ -448,34 +447,34 @@ export default function PractitionerProfilePage() {
                     </div>
                   </FormSection>
 
-                  <FormSection title="Practice location">
+                  <FormSection title={t('practitioner.profile.practiceLocation')}>
                     <div className="grid gap-5 md:grid-cols-3">
-                      <Field label="City" htmlFor="city" error={professionalForm.formState.errors.practiceCity?.message}>
+                      <Field label={t('practitioner.profile.city')} htmlFor="city" error={professionalForm.formState.errors.practiceCity?.message}>
                         <Input id="city" {...professionalForm.register('practiceCity')} />
                       </Field>
-                      <Field label="State" htmlFor="state" error={professionalForm.formState.errors.practiceState?.message}>
+                      <Field label={t('practitioner.profile.state')} htmlFor="state" error={professionalForm.formState.errors.practiceState?.message}>
                         <Input id="state" {...professionalForm.register('practiceState')} />
                       </Field>
-                      <Field label="Country" htmlFor="country" error={professionalForm.formState.errors.practiceCountry?.message}>
+                      <Field label={t('practitioner.profile.country')} htmlFor="country" error={professionalForm.formState.errors.practiceCountry?.message}>
                         <Input id="country" {...professionalForm.register('practiceCountry')} />
                       </Field>
                     </div>
                   </FormSection>
 
                   <FormSection
-                    title="Prescription signature"
-                    description="Upload a clear signature on white background. It is printed on every prescription receipt you issue."
+                    title={t('practitioner.profile.signatureTitle')}
+                    description={t('practitioner.profile.signatureHint')}
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                       <div className="flex h-24 min-w-[200px] items-center justify-center rounded-lg border border-dashed border-border bg-white px-4">
                         {signatureUrl ? (
                           <img
                             src={signatureUrl}
-                            alt="Your signature"
+                            alt={t('practitioner.profile.yourSignature')}
                             className="max-h-20 max-w-full object-contain"
                           />
                         ) : (
-                          <p className="text-center text-xs text-muted-foreground">No signature uploaded</p>
+                          <p className="text-center text-xs text-muted-foreground">{t('practitioner.profile.noSignature')}</p>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -508,18 +507,20 @@ export default function PractitionerProfilePage() {
                           onClick={() => signatureRef.current?.click()}
                         >
                           <PenLine className="h-4 w-4" aria-hidden />
-                          {uploadSignature.isPending ? 'Uploading…' : signatureUrl ? 'Replace signature' : 'Upload signature'}
+                          {uploadSignature.isPending
+                            ? t('common.loading')
+                            : signatureUrl
+                              ? t('practitioner.profile.replaceSignature')
+                              : t('practitioner.profile.uploadSignature')}
                         </Button>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          PNG with transparent or white background works best. Max 2MB.
-                        </p>
+                        <p className="mt-2 text-xs text-muted-foreground">{t('practitioner.profile.signatureFormat')}</p>
                       </div>
                     </div>
                   </FormSection>
 
-                  <FormSection title="Languages" description="Comma-separated, e.g. English, Hausa">
+                  <FormSection title={t('practitioner.profile.languages')} description={t('practitioner.profile.languagesHint')}>
                     <Field
-                      label="Consultation languages"
+                      label={t('practitioner.profile.consultationLanguages')}
                       htmlFor="langs"
                       error={professionalForm.formState.errors.consultationLanguages?.message}
                     >
@@ -539,7 +540,7 @@ export default function PractitionerProfilePage() {
                           Saving…
                         </>
                       ) : (
-                        'Save professional profile'
+                        t('practitioner.profile.saveProfessional')
                       )}
                     </Button>
                   </div>
@@ -556,10 +557,8 @@ export default function PractitionerProfilePage() {
                     <Lock className="h-5 w-5" aria-hidden />
                   </div>
                   <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-lg">Change password</CardTitle>
-                    <CardDescription className="text-sm">
-                      Choose a strong password. You will stay signed in on this device after updating.
-                    </CardDescription>
+                    <CardTitle className="text-lg">{t('practitioner.profile.securityTitle')}</CardTitle>
+                    <CardDescription className="text-sm">{t('practitioner.profile.securityHint')}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -570,13 +569,13 @@ export default function PractitionerProfilePage() {
                     changePwd.mutate({ currentPassword: v.currentPassword, newPassword: v.newPassword }),
                   )}
                 >
-                  <Field label="Current password" htmlFor="cur" error={pwdForm.formState.errors.currentPassword?.message}>
+                  <Field label={t('practitioner.profile.currentPassword')} htmlFor="cur" error={pwdForm.formState.errors.currentPassword?.message}>
                     <PasswordInput id="cur" autoComplete="current-password" {...pwdForm.register('currentPassword')} />
                   </Field>
-                  <Field label="New password" htmlFor="np" error={pwdForm.formState.errors.newPassword?.message}>
+                  <Field label={t('practitioner.profile.newPassword')} htmlFor="np" error={pwdForm.formState.errors.newPassword?.message}>
                     <PasswordInput id="np" autoComplete="new-password" maxLength={12} {...pwdForm.register('newPassword')} />
                   </Field>
-                  <Field label="Confirm new password" htmlFor="cp" error={pwdForm.formState.errors.confirmPassword?.message}>
+                  <Field label={t('practitioner.profile.confirmPassword')} htmlFor="cp" error={pwdForm.formState.errors.confirmPassword?.message}>
                     <PasswordInput id="cp" autoComplete="new-password" maxLength={12} {...pwdForm.register('confirmPassword')} />
                   </Field>
                   <div className="flex justify-end pt-2">
@@ -584,10 +583,10 @@ export default function PractitionerProfilePage() {
                       {changePwd.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Updating…
+                          {t('common.loading')}
                         </>
                       ) : (
-                        'Update password'
+                        t('practitioner.profile.updatePassword')
                       )}
                     </Button>
                   </div>

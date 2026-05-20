@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, HeartPulse, Loader2, MapPin, Phone } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useEffect, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -171,6 +172,7 @@ function SaveButton({
 }
 
 export default function PatientMedicalInfoPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
 
   const profile = useQuery({
@@ -213,7 +215,7 @@ export default function PatientMedicalInfoPage() {
   const saveHealth = useMutation({
     mutationFn: (values: HealthRecordFormValues) => patchPatientHealthRecord(healthRecordFormToPatch(values)),
     onSuccess: async () => {
-      toast.success('Health record saved');
+      toast.success(t('patient.medical.healthSaved'));
       await invalidate();
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
@@ -222,7 +224,7 @@ export default function PatientMedicalInfoPage() {
   const saveEmergency = useMutation({
     mutationFn: (values: EmergencyContactFormValues) => patchPatientEmergency(emergencyFormToPatch(values)),
     onSuccess: async () => {
-      toast.success('Emergency contact saved');
+      toast.success(t('patient.medical.emergencySaved'));
       await invalidate();
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
@@ -231,7 +233,7 @@ export default function PatientMedicalInfoPage() {
   const saveAddress = useMutation({
     mutationFn: (values: AddressFormValues) => patchPatientAddress(addressFormToPatch(values)),
     onSuccess: async () => {
-      toast.success('Address saved');
+      toast.success(t('patient.medical.addressSaved'));
       await invalidate();
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
@@ -242,32 +244,29 @@ export default function PatientMedicalInfoPage() {
   return (
     <>
       <Helmet>
-        <title>Health profile — MRD Online Clinic</title>
+        <title>{t('patient.medical.title')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
       <div className="mx-auto max-w-4xl space-y-8 pb-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-primary">Care</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Health profile</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Keep your allergies, medications, emergency contact, and home address up to date. Each section saves
-              independently so you can update one part at a time.
-            </p>
+            <p className="text-xs font-medium uppercase tracking-wide text-primary">{t('patient.medical.badge')}</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{t('patient.medical.heading')}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{t('patient.medical.description')}</p>
           </div>
           <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link to={ROUTES.patient.profile}>My account</Link>
+            <Link to={ROUTES.patient.profile}>{t('patient.medical.backToAccount')}</Link>
           </Button>
         </div>
 
         {profile.isError ? (
           <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            Could not load your profile. Refresh the page or try again later.
+            {t('patient.medical.couldNotLoadProfile')}
           </p>
         ) : null}
 
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading your health profile…</p>
+          <p className="text-sm text-muted-foreground">{t('patient.medical.loadingProfile')}</p>
         ) : null}
 
         <form
@@ -276,11 +275,11 @@ export default function PatientMedicalInfoPage() {
         >
           <SectionCard
             icon={<HeartPulse className="h-5 w-5" aria-hidden />}
-            title="Health record"
-            description="List allergies, chronic conditions, and medications your care team should know about. Enter one item per line."
+            title={t('patient.medical.healthRecord')}
+            description={t('patient.medical.healthRecordHint')}
             footer={
               <SaveButton
-                label="Save health record"
+                label={t('patient.medical.saveHealthRecord')}
                 pending={saveHealth.isPending}
                 disabled={!healthForm.formState.isDirty}
               />
@@ -290,7 +289,7 @@ export default function PatientMedicalInfoPage() {
               form={healthForm}
               id="allergies"
               name="allergiesText"
-              label="Allergies"
+              label={t('patient.medical.allergies')}
               hint="One per line"
               placeholder={'e.g. Penicillin\nPeanuts'}
             />
@@ -298,7 +297,7 @@ export default function PatientMedicalInfoPage() {
               form={healthForm}
               id="chronic"
               name="chronicConditionsText"
-              label="Chronic conditions"
+              label={t('patient.medical.conditions')}
               hint="One per line"
               placeholder={'e.g. Type 2 diabetes\nHypertension'}
             />
@@ -306,7 +305,7 @@ export default function PatientMedicalInfoPage() {
               form={healthForm}
               id="meds"
               name="currentMedicationsText"
-              label="Current medications"
+              label={t('patient.medical.medications')}
               hint="One per line"
               placeholder={'e.g. Metformin 500mg — twice daily\nLisinopril 10mg — once daily'}
             />
@@ -319,15 +318,15 @@ export default function PatientMedicalInfoPage() {
         >
           <SectionCard
             icon={<Phone className="h-5 w-5" aria-hidden />}
-            title="Emergency contact"
-            description="Someone we can reach if you need urgent help during a visit. All three fields are required when saving a contact."
+            title={t('patient.medical.emergency')}
+            description={t('patient.medical.emergencyHint')}
             footer={
               <>
                 <p className="text-xs text-muted-foreground sm:mr-auto sm:text-left">
                   Clear all fields and save to remove your emergency contact.
                 </p>
                 <SaveButton
-                  label="Save emergency contact"
+                  label={t('patient.medical.saveEmergencyContact')}
                   pending={saveEmergency.isPending}
                   disabled={!emergencyForm.formState.isDirty}
                 />
@@ -335,13 +334,13 @@ export default function PatientMedicalInfoPage() {
             }
           >
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldRow label="Full name" htmlFor="en">
+              <FieldRow label={t('patient.medical.contactName')} htmlFor="en">
                 <Input id="en" autoComplete="name" placeholder="e.g. Fatima Suleiman" {...emergencyForm.register('emergencyName')} />
               </FieldRow>
-              <FieldRow label="Relationship" htmlFor="er">
+              <FieldRow label={t('patient.medical.relationship')} htmlFor="er">
                 <Input id="er" placeholder="e.g. Spouse, Parent, Sibling" {...emergencyForm.register('emergencyRelationship')} />
               </FieldRow>
-              <FieldRow label="Phone number" htmlFor="ep" className="sm:col-span-2">
+              <FieldRow label={t('patient.medical.contactPhone')} htmlFor="ep" className="sm:col-span-2">
                 <Input id="ep" type="tel" autoComplete="tel" placeholder="+234 …" {...emergencyForm.register('emergencyPhone')} />
               </FieldRow>
             </div>
@@ -357,31 +356,31 @@ export default function PatientMedicalInfoPage() {
         >
           <SectionCard
             icon={<MapPin className="h-5 w-5" aria-hidden />}
-            title="Home address"
-            description="Used for records and any home-visit logistics. Fill in what you are comfortable sharing."
+            title={t('patient.medical.homeAddress')}
+            description={t('patient.medical.addressHint')}
             footer={
               <>
                 <p className="text-xs text-muted-foreground sm:mr-auto sm:text-left">
                   Clear all fields and save to remove your saved address.
                 </p>
-                <SaveButton label="Save address" pending={saveAddress.isPending} disabled={!addressForm.formState.isDirty} />
+                <SaveButton label={t('patient.medical.saveAddress')} pending={saveAddress.isPending} disabled={!addressForm.formState.isDirty} />
               </>
             }
           >
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldRow label="Street address" htmlFor="st" className="sm:col-span-2">
+              <FieldRow label={t('patient.medical.street')} htmlFor="st" className="sm:col-span-2">
                 <Input id="st" autoComplete="street-address" placeholder="House number and street" {...addressForm.register('addressStreet')} />
               </FieldRow>
-              <FieldRow label="City" htmlFor="city">
+              <FieldRow label={t('patient.medical.city')} htmlFor="city">
                 <Input id="city" autoComplete="address-level2" {...addressForm.register('addressCity')} />
               </FieldRow>
-              <FieldRow label="State / region" htmlFor="state">
+              <FieldRow label={t('patient.medical.state')} htmlFor="state">
                 <Input id="state" autoComplete="address-level1" {...addressForm.register('addressState')} />
               </FieldRow>
-              <FieldRow label="Country" htmlFor="country">
+              <FieldRow label={t('patient.medical.country')} htmlFor="country">
                 <Input id="country" autoComplete="country-name" {...addressForm.register('addressCountry')} />
               </FieldRow>
-              <FieldRow label="Postal code" htmlFor="zip">
+              <FieldRow label={t('patient.medical.postalCode')} htmlFor="zip">
                 <Input id="zip" autoComplete="postal-code" {...addressForm.register('addressPostalCode')} />
               </FieldRow>
             </div>

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { addDays, startOfDay } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PractitionerBookingWidget } from '@/features/booking/practitioner-booking-widget';
 import { getPractitionerPublicProfile, getPractitionerPublicSlots } from '@/features/practitioners/public-api';
@@ -12,6 +13,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 export default function PatientBookAppointmentPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { practitionerId } = useParams();
   const [searchParams] = useSearchParams();
@@ -41,7 +43,7 @@ export default function PatientBookAppointmentPage() {
   return (
     <>
       <Helmet>
-        <title>{name ? `Book with ${name} — MRD Online Clinic` : 'Book appointment — MRD Online Clinic'}</title>
+        <title>{name ? t('patient.booking.titleWith', { name }) : t('patient.booking.title')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -49,18 +51,18 @@ export default function PatientBookAppointmentPage() {
         <div>
           {id ? (
             <Link to={ROUTES.patient.findDoctorProfile(id)} className="text-sm font-medium text-teal-800 hover:underline">
-              ← Back to profile
+              {t('patient.booking.backToProfile')}
             </Link>
           ) : null}
-          <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight text-[#0a1628]">Book a visit</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Choose an open time. Your practitioner will confirm the request.</p>
+          <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight text-[#0a1628]">{t('patient.booking.heading')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('patient.booking.description')}</p>
         </div>
 
-        {!id ? <p className="text-sm text-destructive">Invalid practitioner.</p> : null}
+        {!id ? <p className="text-sm text-destructive">{t('patient.booking.invalidPractitioner')}</p> : null}
 
         {profile.isLoading ? <div className="h-64 animate-pulse rounded-2xl bg-muted" /> : null}
         {profile.isError ? (
-          <p className="text-sm text-destructive">Could not load this practitioner. They may no longer be listed.</p>
+          <p className="text-sm text-destructive">{t('patient.booking.couldNotLoadPractitioner')}</p>
         ) : null}
 
         {isRecord(pr) ? (

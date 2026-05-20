@@ -7,6 +7,7 @@ import { AppSplash } from '@/components/shared/app-splash';
 import { getEnv } from '@/config/env';
 import { AppQueryProvider } from '@/providers/query-provider';
 import { router } from '@/router';
+import '@/i18n';
 import '@/styles/globals.css';
 
 getEnv();

@@ -17,6 +17,8 @@ import {
   X,
 } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { BrandMark } from '@/components/brand/BrandMark';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { HeaderProfileMenu } from '@/components/shared/header-profile-menu';
@@ -30,25 +32,26 @@ import { CallProvider } from '@/providers/call-provider';
 import { ROUTES } from '@/router/routes';
 import { useAuthStore } from '@/stores/auth-store';
 
-const workspaceNav = [
-  { to: ROUTES.patient.dashboard, label: 'Dashboard', icon: LayoutDashboard },
-  { to: ROUTES.patient.appointments, label: 'Appointments', icon: Calendar },
-  { to: ROUTES.patient.messages, label: 'Messages', icon: MessageSquare },
-  { to: ROUTES.patient.prescriptions, label: 'Prescriptions', icon: FileText },
-  { to: ROUTES.patient.findDoctor, label: 'Find a doctor', icon: Stethoscope },
-] as const;
-
-const careNav: {
-  to: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  end?: boolean;
-}[] = [
-  { to: ROUTES.patient.profileMedical, label: 'Health profile', icon: HeartPulse },
-  { to: ROUTES.patient.profile, label: 'My account', icon: UserCircle, end: true },
-];
-
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useTranslation();
+
+  const workspaceNav = [
+    { to: ROUTES.patient.dashboard, labelKey: 'nav.dashboard', icon: LayoutDashboard },
+    { to: ROUTES.patient.appointments, labelKey: 'nav.appointments', icon: Calendar },
+    { to: ROUTES.patient.messages, labelKey: 'nav.messages', icon: MessageSquare },
+    { to: ROUTES.patient.prescriptions, labelKey: 'nav.prescriptions', icon: FileText },
+    { to: ROUTES.patient.findDoctor, labelKey: 'nav.findDoctor', icon: Stethoscope },
+  ] as const;
+
+  const careNav: {
+    to: string;
+    labelKey: string;
+    icon: typeof LayoutDashboard;
+    end?: boolean;
+  }[] = [
+    { to: ROUTES.patient.profileMedical, labelKey: 'nav.healthProfile', icon: HeartPulse },
+    { to: ROUTES.patient.profile, labelKey: 'nav.myAccount', icon: UserCircle, end: true },
+  ];
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
       'relative flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-[13.5px] text-white/70 transition-colors hover:bg-white/5 hover:text-white',
@@ -72,24 +75,24 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </Link>
         </div>
 
-        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">Workspace</p>
+        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">{t('nav.workspace')}</p>
         <nav className="flex flex-col gap-0.5">
-          {workspaceNav.map(({ to, label, icon: Icon }) => (
+          {workspaceNav.map(({ to, labelKey, icon: Icon }) => (
             <NavLink key={to} to={to} className={linkClass} onClick={onNavigate} end={to === ROUTES.patient.dashboard}>
               <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" strokeWidth={2} />
-              {label}
+              {t(labelKey)}
             </NavLink>
           ))}
         </nav>
       </div>
 
       <div className="px-2 pb-2">
-        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">Care</p>
+        <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-[0.12em] text-white/40">{t('nav.care')}</p>
         <nav className="flex flex-col gap-0.5">
-          {careNav.map(({ to, label, icon: Icon, end }) => (
+          {careNav.map(({ to, labelKey, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={linkClass} onClick={onNavigate}>
               <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" strokeWidth={2} />
-              {label}
+              {t(labelKey)}
             </NavLink>
           ))}
         </nav>
@@ -111,6 +114,7 @@ function SidebarChrome({
   photoUrl?: string;
   onRequestLogout: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="mt-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-3">
       <div className="flex gap-2.5">
@@ -142,7 +146,7 @@ function SidebarChrome({
             className="mt-2 h-8 w-full justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[12px] font-medium text-white/85 hover:bg-white/10 hover:text-white"
             onClick={onRequestLogout}
           >
-            Log out
+            {t('common.logout')}
           </Button>
         </div>
       </div>
@@ -151,6 +155,7 @@ function SidebarChrome({
 }
 
 export function PatientLayout() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const clearSession = useAuthStore((s) => s.clearSession);
@@ -276,7 +281,7 @@ export function PatientLayout() {
             <Input
               ref={searchRef}
               type="search"
-              placeholder="Search doctors, prescriptions, or messages…"
+              placeholder={t('layout.searchPatientPlaceholder')}
               className="h-9 border-[#e2e8f0] bg-[#eef1f6] pl-9 pr-14 text-[13px] shadow-none focus-visible:border-sky-500 focus-visible:bg-white focus-visible:ring-sky-500/20"
             />
             <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-[#e2e8f0] bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline-block">
@@ -285,10 +290,11 @@ export function PatientLayout() {
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            <LanguageSwitcher />
             <button
               type="button"
               className="relative grid h-9 w-9 place-items-center rounded-[9px] text-muted-foreground transition-colors hover:bg-[#eef1f6] hover:text-foreground"
-              title="Notifications"
+              title={t('layout.notifications')}
             >
               <Bell className="h-[17px] w-[17px]" strokeWidth={2} />
               <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full border-2 border-white bg-rose-500" />
@@ -296,7 +302,7 @@ export function PatientLayout() {
             <button
               type="button"
               className="grid h-9 w-9 place-items-center rounded-[9px] text-muted-foreground transition-colors hover:bg-[#eef1f6] hover:text-foreground"
-              title="Help"
+              title={t('layout.help')}
             >
               <HelpCircle className="h-[17px] w-[17px]" strokeWidth={2} />
             </button>
@@ -306,7 +312,7 @@ export function PatientLayout() {
             >
               <Link to={ROUTES.patient.findDoctor}>
                 <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                Book a visit
+                {t('layout.bookVisit')}
               </Link>
             </Button>
             <HeaderProfileMenu

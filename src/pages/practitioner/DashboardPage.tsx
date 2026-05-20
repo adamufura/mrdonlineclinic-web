@@ -24,7 +24,9 @@ import {
   subWeeks,
 } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { timeGreeting } from '@/lib/i18n/greeting';
 import { Button } from '@/components/ui/button';
 import { PractitionerOpenSlotsSummary } from '@/features/practitioners/practitioner-slot-manager';
 import { getPractitionerMe, listPractitionerAppointments } from '@/features/practitioners/session-api';
@@ -33,13 +35,6 @@ import { cn } from '@/lib/utils/cn';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
-}
-
-function greetingLabel(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
 }
 
 const TERMINAL = new Set(['COMPLETED', 'CANCELLED', 'NO_SHOW', 'REJECTED']);
@@ -65,6 +60,7 @@ const AVATAR_TONES = [
 ] as const;
 
 export default function PractitionerDashboardPage() {
+  const { t } = useTranslation();
   const today = new Date();
   const from = startOfDay(today);
   const to = endOfDay(today);
@@ -247,22 +243,22 @@ export default function PractitionerDashboardPage() {
 
   const completedMeta =
     weekOverWeekPct === null && completedThisWeek > 0
-      ? 'First week of data'
+      ? t('practitioner.dashboard.firstWeekData')
       : weekOverWeekPct !== 0 && weekOverWeekPct !== null
         ? (
             <span className={cn('font-medium', weekOverWeekPct >= 0 ? 'text-teal-600' : 'text-rose-600')}>
               {weekOverWeekPct >= 0 ? '+' : ''}
-              {weekOverWeekPct}% vs last week
+              {t('practitioner.dashboard.vsLastWeek', { pct: weekOverWeekPct })}
             </span>
           )
         : completedThisWeek > 0
-          ? 'Same as last week'
-          : 'No completed visits yet';
+          ? t('practitioner.dashboard.sameAsLastWeek')
+          : t('practitioner.dashboard.noCompletedYet');
 
   return (
     <>
       <Helmet>
-        <title>Practitioner dashboard — MRD Online Clinic</title>
+        <title>{t('practitioner.dashboard.title')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -271,21 +267,20 @@ export default function PractitionerDashboardPage() {
           <div>
             <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-teal-500/15 bg-teal-500/10 px-3 py-1 text-xs font-medium text-teal-800">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-500" />
-              {format(today, 'EEEE, MMM d')} · Day view
+              {format(today, 'EEEE, MMM d')} · {t('practitioner.dashboard.dayView')}
             </p>
             <h1 className="font-display text-3xl font-normal tracking-tight text-[#0a1628] sm:text-[38px] sm:leading-[1.1]">
-              {greetingLabel()}, <em className="font-medium not-italic text-teal-700">Dr. {lastName || '—'}</em>
+              {timeGreeting(t)}, <em className="font-medium not-italic text-teal-700">Dr. {lastName || '—'}</em>
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-[#64748b]">
-              You have <span className="font-semibold text-[#0a1628]">{totalToday}</span> visits today
+              {t('practitioner.dashboard.visitsToday', { count: totalToday })}
               {pendingTotal > 0 ? (
                 <>
                   {' '}
-                  and <span className="font-semibold text-rose-600">{pendingTotal}</span> request
-                  {pendingTotal === 1 ? '' : 's'} awaiting your decision.
+                  {t('practitioner.dashboard.pendingRequests', { count: pendingTotal })}
                 </>
               ) : (
-                <> and no pending booking requests.</>
+                <> {t('practitioner.dashboard.noPending')}</>
               )}
             </p>
           </div>
@@ -294,17 +289,17 @@ export default function PractitionerDashboardPage() {
               <span className="inline-flex items-center gap-1.5">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                 <span className="font-semibold text-[#0a1628]">{rating.toFixed(1)}</span>
-                <span>· {reviewCount} reviews</span>
+                <span>· {reviewCount} {t('common.reviews')}</span>
               </span>
             ) : (
-              <span className="text-muted-foreground">No public rating yet</span>
+              <span className="text-muted-foreground">{t('common.noRating')}</span>
             )}
             <Link
               to={ROUTES.practitioner.messages}
               className="inline-flex items-center gap-1.5 font-medium text-teal-800 hover:underline"
             >
               <MessageSquare className="h-4 w-4" />
-              Inbox
+              {t('common.inbox')}
             </Link>
           </div>
         </div>
@@ -313,42 +308,42 @@ export default function PractitionerDashboardPage() {
           <StatCard
             tone="blue"
             icon={Calendar}
-            label="Today's visits"
+            label={t('practitioner.dashboard.todayVisits')}
             value={totalToday}
-            meta={`${completedToday} completed · ${toGo} to go`}
+            meta={t('practitioner.dashboard.completedToGo', { completed: completedToday, toGo })}
           />
           <StatCard
             tone="warm"
             icon={Clock}
-            label="Pending requests"
+            label={t('practitioner.dashboard.pendingRequestsLabel')}
             value={pendingTotal}
             meta={
               pendingTotal > 0 ? (
                 <span className="inline-flex items-center gap-1 font-medium text-rose-600">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
-                  Action needed
+                  {t('practitioner.dashboard.actionNeeded')}
                 </span>
               ) : (
-                'All caught up'
+                t('practitioner.dashboard.allCaughtUp')
               )
             }
           />
           <StatCard
             tone="mint"
             icon={TrendingUp}
-            label="Completed this week"
+            label={t('practitioner.dashboard.completedWeek')}
             value={completedThisWeek}
             meta={completedMeta}
           />
           <StatCard
             tone="coral"
             icon={Users}
-            label="Patients this week"
+            label={t('practitioner.dashboard.patientsWeek')}
             value={uniquePatientsThisWeek}
             meta={
               newPatientsThisWeek > 0
-                ? `+${newPatientsThisWeek} new vs last week`
-                : 'Unique patients with visits'
+                ? t('practitioner.dashboard.newVsLastWeek', { count: newPatientsThisWeek })
+                : t('practitioner.dashboard.uniquePatients')
             }
           />
         </div>
@@ -359,24 +354,27 @@ export default function PractitionerDashboardPage() {
               <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
-                    Today&apos;s <em className="not-italic text-teal-700">schedule</em>
+                    {t('practitioner.dashboard.todaySchedule')}
                   </h2>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    {totalToday} visits · {scheduleRange ?? 'No visits scheduled'}
+                    {t('practitioner.dashboard.visitsCount', {
+                      count: totalToday,
+                      range: scheduleRange ?? t('practitioner.dashboard.noVisitsScheduled'),
+                    })}
                   </p>
                 </div>
                 <Link
                   to={ROUTES.practitioner.schedule}
                   className="inline-flex items-center gap-1 text-xs font-medium text-teal-800 hover:underline"
                 >
-                  Full calendar
+                  {t('practitioner.dashboard.fullCalendar')}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
 
-              {todayAppts.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
+              {todayAppts.isLoading ? <p className="text-sm text-muted-foreground">{t('common.loading')}</p> : null}
               {todayAppts.isError ? (
-                <p className="text-sm text-destructive">Could not load today&apos;s visits.</p>
+                <p className="text-sm text-destructive">{t('practitioner.dashboard.couldNotLoadToday')}</p>
               ) : null}
 
               {items.length ? (
@@ -395,7 +393,7 @@ export default function PractitionerDashboardPage() {
                     const reason =
                       typeof a.reasonForVisit === 'string' && a.reasonForVisit.trim()
                         ? a.reasonForVisit.trim()
-                        : 'Visit';
+                        : t('common.visit');
 
                     return (
                       <li key={id} className="relative flex gap-4 pb-6 last:pb-0">
@@ -423,16 +421,18 @@ export default function PractitionerDashboardPage() {
                         <div className="shrink-0 pt-5">
                           {status === 'COMPLETED' ? (
                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-                              Completed
+                              {t('common.completed')}
                             </span>
                           ) : isNext ? (
                             <span className="rounded-full bg-teal-100 px-2.5 py-1 text-[11px] font-medium text-teal-800">
-                              Next up · {formatDistanceToNow(st, { addSuffix: true })}
+                              {t('practitioner.dashboard.nextUp', {
+                                time: formatDistanceToNow(st, { addSuffix: true }),
+                              })}
                             </span>
                           ) : isUpcoming ? (
                             <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-800">
                               <Video className="h-3 w-3" />
-                              Video
+                              {t('common.video')}
                             </span>
                           ) : (
                             <span className="rounded-full border border-[#e2e8f0] bg-white px-2.5 py-1 text-[11px] font-medium capitalize text-[#64748b]">
@@ -445,7 +445,7 @@ export default function PractitionerDashboardPage() {
                   })}
                 </ul>
               ) : todayAppts.isSuccess ? (
-                <p className="text-sm text-muted-foreground">No appointments scheduled for today.</p>
+                <p className="text-sm text-muted-foreground">{t('practitioner.dashboard.noApptsToday')}</p>
               ) : null}
             </section>
 
@@ -455,18 +455,20 @@ export default function PractitionerDashboardPage() {
               <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
-                    This week&apos;s <em className="not-italic text-teal-700">visits</em>
+                    {t('practitioner.dashboard.weekVisits')}
                   </h2>
                   <p className="mt-1 text-xs text-[#64748b]">
-                    {completedThisWeek} completed · {totalWeekSlots} appointment{totalWeekSlots === 1 ? '' : 's'} this
-                    week
+                    {t('practitioner.dashboard.weekSummary', {
+                      count: totalWeekSlots,
+                      completed: completedThisWeek,
+                    })}
                   </p>
                 </div>
                 <Link
                   to={ROUTES.practitioner.appointments}
                   className="inline-flex items-center gap-1 text-xs font-medium text-teal-800 hover:underline"
                 >
-                  Reports
+                  {t('practitioner.dashboard.reports')}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -499,24 +501,26 @@ export default function PractitionerDashboardPage() {
               <div className="mb-4 flex items-start justify-between gap-2">
                 <div>
                   <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
-                    Pending <em className="not-italic text-teal-700">requests</em>
+                    {t('practitioner.dashboard.pendingTitle')}
                   </h2>
                   <p className="mt-1 text-xs text-[#64748b]">
                     {pendingTotal > 0
-                      ? `Action needed · ${pendingTotal} awaiting review`
-                      : 'No requests waiting'}
+                      ? t('practitioner.dashboard.pendingMeta', { count: pendingTotal })
+                      : t('practitioner.dashboard.noRequestsWaiting')}
                   </p>
                 </div>
                 <Link
                   to={ROUTES.practitioner.appointments}
                   className="text-xs font-medium text-teal-800 hover:underline"
                 >
-                  View all
+                  {t('common.viewAll')}
                 </Link>
               </div>
 
-              {pending.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
-              {pending.isError ? <p className="text-sm text-destructive">Could not load requests.</p> : null}
+              {pending.isLoading ? <p className="text-sm text-muted-foreground">{t('common.loading')}</p> : null}
+              {pending.isError ? (
+                <p className="text-sm text-destructive">{t('practitioner.dashboard.couldNotLoadRequests')}</p>
+              ) : null}
 
               {pendingItems.length ? (
                 <ul className="space-y-3">
@@ -526,7 +530,7 @@ export default function PractitionerDashboardPage() {
                     const reason =
                       typeof a.reasonForVisit === 'string' && a.reasonForVisit.trim()
                         ? a.reasonForVisit.trim()
-                        : 'Consultation';
+                        : t('common.consultation');
                     const symptoms = Array.isArray(a.symptoms)
                       ? (a.symptoms as unknown[]).filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
                       : [];
@@ -556,7 +560,7 @@ export default function PractitionerDashboardPage() {
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-[#0a1628]">{patientName(a)}</p>
                           <p className="text-xs text-[#64748b]">
-                            {st ? `${format(st, 'MMM d')} · ${format(st, 'h:mm a')}` : 'Time TBC'} · {reason}
+                            {st ? `${format(st, 'MMM d')} · ${format(st, 'h:mm a')}` : t('common.timeTbc')} · {reason}
                           </p>
                           {tags.length ? (
                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -598,7 +602,7 @@ export default function PractitionerDashboardPage() {
                   })}
                 </ul>
               ) : pending.isSuccess ? (
-                <p className="text-sm text-muted-foreground">No pending requests.</p>
+                <p className="text-sm text-muted-foreground">{t('practitioner.dashboard.noPendingRequests')}</p>
               ) : null}
             </section>
 
@@ -606,20 +610,20 @@ export default function PractitionerDashboardPage() {
               <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <h2 className="font-display text-xl font-medium tracking-tight text-[#0a1628]">
-                    Recent <em className="not-italic text-teal-700">patients</em>
+                    {t('practitioner.dashboard.recentPatients')}
                   </h2>
-                  <p className="mt-1 text-xs text-[#64748b]">Seen this week (by appointment volume)</p>
+                  <p className="mt-1 text-xs text-[#64748b]">{t('practitioner.dashboard.seenThisWeek')}</p>
                 </div>
                 <Link
                   to={ROUTES.practitioner.patients}
                   className="inline-flex items-center gap-1 text-xs font-medium text-teal-800 hover:underline"
                 >
-                  All patients
+                  {t('practitioner.dashboard.allPatients')}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
 
-              {weekAppts.isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
+              {weekAppts.isLoading ? <p className="text-sm text-muted-foreground">{t('common.loading')}</p> : null}
               {recentPatients.length ? (
                 <ul className="divide-y divide-[#eef1f6] rounded-xl border border-[#e2e8f0] bg-[#fafbfc]">
                   {recentPatients.map((p, idx) => (
@@ -644,11 +648,11 @@ export default function PractitionerDashboardPage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-[#0a1628]">{p.name}</p>
                           <p className="text-[11px] text-[#64748b]">
-                            Last visit {format(p.last, 'MMM d')} · Active this week
+                            {t('practitioner.dashboard.lastVisit', { date: format(p.last, 'MMM d') })}
                           </p>
                         </div>
                         <span className="shrink-0 text-xs font-medium tabular-nums text-[#64748b]">
-                          {p.visits} visit{p.visits === 1 ? '' : 's'}
+                          {t('practitioner.dashboard.visitCount', { count: p.visits })}
                         </span>
                         <ChevronRight className="h-4 w-4 shrink-0 text-[#94a3b8]" />
                       </Link>
@@ -656,7 +660,7 @@ export default function PractitionerDashboardPage() {
                   ))}
                 </ul>
               ) : weekAppts.isSuccess ? (
-                <p className="text-sm text-muted-foreground">No patients in this week&apos;s schedule yet.</p>
+                <p className="text-sm text-muted-foreground">{t('practitioner.dashboard.noPatientsWeek')}</p>
               ) : null}
             </section>
           </div>

@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Download, FileText, Loader2, Pill } from 'lucide-react';
 import { useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { listPatientPrescriptions } from '@/features/patients/api';
@@ -37,6 +38,7 @@ function medicationCount(rx: Record<string, unknown>): number {
 }
 
 export default function PatientPrescriptionsPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
 
@@ -62,7 +64,7 @@ export default function PatientPrescriptionsPage() {
   return (
     <>
       <Helmet>
-        <title>Prescriptions — MRD Online Clinic</title>
+        <title>{t('patient.prescriptions.title')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
@@ -72,16 +74,16 @@ export default function PatientPrescriptionsPage() {
           <div>
             <p className="mb-2 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-[#64748b]">
               <Pill className="size-3.5 text-rose-500" aria-hidden />
-              Your care
+              {t('patient.appointmentsList.badge')}
             </p>
-            <h1 className="font-display text-3xl font-normal tracking-tight text-[#0a1628]">Prescriptions</h1>
-            <p className="mt-2 max-w-2xl text-sm text-[#64748b]">
-              View and download prescriptions issued by your clinicians after completed visits.
-            </p>
+            <h1 className="font-display text-3xl font-normal tracking-tight text-[#0a1628]">
+              {t('patient.prescriptions.heading')}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-[#64748b]">{t('patient.prescriptions.description')}</p>
           </div>
           {listQuery.isSuccess && meta ? (
-            <p className="text-sm text-[#64748b]">
-              <span className="font-semibold text-[#0a1628]">{meta.total}</span> total
+            <p className="text-sm font-semibold text-[#0a1628]">
+              {t('patient.prescriptions.issuedCount', { count: meta.total })}
             </p>
           ) : null}
         </div>
@@ -91,12 +93,12 @@ export default function PatientPrescriptionsPage() {
           {listQuery.isLoading ? (
             <div className="flex items-center justify-center gap-2 py-20 text-[#64748b]">
               <Loader2 className="size-5 animate-spin text-sky-600" aria-hidden />
-              Loading prescriptions…
+              {t('patient.prescriptions.loading')}
             </div>
           ) : null}
 
           {listQuery.isError ? (
-            <p className="p-8 text-sm text-destructive">Could not load prescriptions. Try again shortly.</p>
+            <p className="p-8 text-sm text-destructive">{t('patient.prescriptions.couldNotLoad')}</p>
           ) : null}
 
           {listQuery.isSuccess && items.length === 0 ? (
@@ -104,7 +106,7 @@ export default function PatientPrescriptionsPage() {
               <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-rose-50">
                 <FileText className="size-6 text-rose-400" />
               </div>
-              <p className="font-medium text-[#0a1628]">No prescriptions yet</p>
+              <p className="font-medium text-[#0a1628]">{t('patient.prescriptions.emptyTitle')}</p>
               <p className="mt-2 text-sm text-[#64748b]">
                 After a completed visit, your clinician may issue a prescription that will appear here.
               </p>
@@ -187,7 +189,7 @@ export default function PatientPrescriptionsPage() {
                   disabled={page <= 1}
                   onClick={() => setPage(page - 1)}
                 >
-                  Previous
+                  {t('patient.prescriptions.pagePrev')}
                 </Button>
                 <Button
                   type="button"
@@ -197,7 +199,7 @@ export default function PatientPrescriptionsPage() {
                   disabled={page >= totalPages}
                   onClick={() => setPage(page + 1)}
                 >
-                  Next
+                  {t('patient.prescriptions.pageNext')}
                 </Button>
               </div>
             </div>

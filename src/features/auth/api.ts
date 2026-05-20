@@ -1,5 +1,6 @@
 import { api, ensureAccessToken } from '@/lib/api/client';
 import type { ApiEnvelope, AuthUser, TokenPair } from '@/types/api';
+import type { AppLanguage } from '@/types/language';
 
 function unwrap<T>(data: ApiEnvelope<T>, fallbackMsg: string): T {
   if (!data.success) {
@@ -64,6 +65,12 @@ export async function forgotPassword(email: string): Promise<{ message: string }
 export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
   const { data } = await api.post<ApiEnvelope<{ message: string }>>('/auth/reset-password', { token, password });
   return unwrap(data, 'Reset failed');
+}
+
+export async function updatePreferredLanguage(preferredLanguage: AppLanguage): Promise<AuthUser> {
+  await ensureAccessToken();
+  const { data } = await api.patch<ApiEnvelope<AuthUser>>('/auth/me/language', { preferredLanguage });
+  return unwrap(data, 'Unable to update language');
 }
 
 export async function changePassword(

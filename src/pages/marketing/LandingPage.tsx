@@ -1,31 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import type { LucideIcon } from 'lucide-react';
-import {
-  Bone,
-  Brain,
-  Building2,
-  CalendarCheck,
-  CalendarDays,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  Droplets,
-  Ear,
-  Eye,
-  FlaskConical,
-  Heart,
-  Minus,
-  Pill,
-  Plus,
-  Search,
-  Shield,
-  Smile,
-  Smartphone,
-  Star,
-  Store,
-  User,
-} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Check, ChevronLeft, ChevronRight, Minus, Plus, Star } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import avatar1Url from '@/assets/marketing/landing-avatar-1.jpg';
@@ -36,6 +11,7 @@ import faqPractitionerUrl from '@/assets/marketing/landing-faq-practitioner.jpg'
 import heroPractitionerUrl from '@/assets/marketing/landing-hero-practitioner.jpg';
 import howItWorksUrl from '@/assets/marketing/landing-how-it-works.jpg';
 import { HeroSearchBar } from '@/components/marketing/HeroSearchBar';
+import { useLandingCopy } from '@/features/marketing/use-landing-copy';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/router/routes';
@@ -44,123 +20,21 @@ const DOCTOR_IMG = heroPractitionerUrl;
 const HOW_IT_WORKS_IMG = howItWorksUrl;
 const FAQ_PANEL_IMG = faqPractitionerUrl;
 
-const HOW_IT_WORKS_STEPS = [
-  {
-    title: 'Search a Doctor',
-    description:
-      'Find verified practitioners by specialty, location, or availability and narrow down who fits your needs.',
-    Icon: Search,
-  },
-  {
-    title: 'Check Doctor Profile',
-    description:
-      'Explore detailed profiles, languages, and patient feedback so you can book knowing exactly who you will see.',
-    Icon: ClipboardList,
-  },
-  {
-    title: 'Book & Consult Online',
-    description:
-      'Reserve a slot that works for you, then meet your clinician via secure messaging or video—no crowded waiting rooms.',
-    Icon: CalendarCheck,
-  },
-  {
-    title: 'Pharmacy',
-    description:
-      'When prescribing is appropriate, your clinician routes medications to trusted partner pharmacies you can use for pickup or delivery.',
-    Icon: Pill,
-  },
-] as const;
-
 const AVATAR_CARD = avatarCardUrl;
 const AV_ROUND = [avatar1Url, avatar2Url, avatar3Url];
 
-const TESTIMONIALS = [
-  {
-    name: 'Aisha Ahmad',
-    location: 'Katsina, Nigeria',
-    rating: 5,
-    quote:
-      'MRD Online Clinic made it so easy to find a specialist. I booked, had my consult, and received my prescription — all within the same day.',
-  },
-  {
-    name: 'Fatima Yusuf',
-    location: 'Abuja, Nigeria',
-    rating: 5,
-    quote:
-      'As a busy professional, being able to consult a doctor without leaving my office is a complete game changer. Highly recommend this platform.',
-  },
-  {
-    name: 'Kwame Mensah',
-    location: 'Kano, Nigeria',
-    rating: 5,
-    quote:
-      'The doctor I was connected with was thorough and professional. I felt like I was in great hands throughout the entire consultation.',
-  },
-];
-
-const SERVICE_SHORTCUTS: {
-  label: string;
-  href: string;
-  Icon: LucideIcon;
-  tone: string;
-}[] = [
-  { label: 'Book Appointment', href: ROUTES.findDoctor, Icon: CalendarDays, tone: 'bg-violet-100 text-violet-600' },
-  { label: 'Lab Testing Services', href: ROUTES.contact, Icon: FlaskConical, tone: 'bg-emerald-100 text-emerald-600' },
-  { label: 'Medicines & Supplies', href: `${ROUTES.home}#pharmacy`, Icon: Store, tone: 'bg-cyan-100 text-cyan-600' },
-  { label: 'Hospitals / Clinics', href: ROUTES.findDoctor, Icon: Building2, tone: 'bg-rose-100 text-rose-600' },
-  { label: 'Health Care Services', href: `${ROUTES.home}#patients`, Icon: Shield, tone: 'bg-green-100 text-green-600' },
-  { label: "Talk to Doctor's", href: ROUTES.findDoctor, Icon: Smartphone, tone: 'bg-pink-100 text-pink-600' },
-];
-
-const SPECIALITY_SHOWCASE: { name: string; Icon: LucideIcon; highlight?: boolean }[] = [
-  { name: 'Cardiology', Icon: Heart },
-  { name: 'Neurology', Icon: Brain },
-  { name: 'Urology', Icon: Droplets },
-  { name: 'Orthopedic', Icon: Bone },
-  { name: 'Dentist', Icon: Smile, highlight: true },
-  { name: 'Ophthalmology', Icon: Eye },
-  { name: 'Pediatrics', Icon: User },
-  { name: 'ENT', Icon: Ear },
-];
-
-const LANDING_FAQ: { q: string; a: string }[] = [
-  {
-    q: 'How Do I Book An Appointment With A Doctor?',
-    a:
-      'Yes, simply visit our website and log in or create an account. Search for a doctor based on specialization, location, or availability & confirm your booking.',
-  },
-  {
-    q: 'Can I Request A Specific Doctor When Booking My Appointment?',
-    a:
-      'Yes. Every booking is tied to the practitioner profile you selected. Use search and filters to find the clinician you prefer before you pick a time.',
-  },
-  {
-    q: 'What Should I Do If I Need To Cancel Or Reschedule My Appointment?',
-    a:
-      'Open Appointments from your patient dashboard as early as possible, then use reschedule or cancel. Policies may vary slightly by clinician—your confirmation email summarizes the timing.',
-  },
-  {
-    q: "What If I'm Running Late For My Appointment?",
-    a:
-      'Message your clinician through the secure thread linked to your appointment. They will advise whether to join late, switch to messaging, or rebook.',
-  },
-  {
-    q: 'Can I Book Appointments For Family Members Or Dependents?',
-    a:
-      'Where your account allows dependents or linked profiles you can book on their behalf; otherwise register a separate patient profile so each person has accurate medical records.',
-  },
-];
-
 function LandingFaqSection() {
+  const { t } = useTranslation();
+  const { faq } = useLandingCopy();
   const [openIndex, setOpenIndex] = useState(0);
 
   return (
     <section id="faq" className="scroll-mt-28 border-t border-brand-stroke-soft bg-white py-14 lg:py-20">
       <div className="mx-auto w-full max-w-site px-4 sm:px-6 lg:px-8">
         <div className="mb-12 max-w-[40rem] lg:mb-14">
-          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand-hero-blue">Get Your Answer</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-brand-hero-blue">{t('landing.faq.badge')}</p>
           <h2 className="mt-2 text-[1.75rem] font-extrabold leading-snug text-brand-navy sm:text-[2.125rem] lg:text-[2.35rem]">
-            Frequently Asked Questions
+            {t('landing.faq.heading')}
             <sup className="-top-[2px] relative ml-0.5 inline-flex align-baseline text-brand-hero-blue" aria-hidden>
               <Plus className="size-[14px] sm:size-4 lg:size-[1.05rem]" strokeWidth={2.9} />
             </sup>
@@ -186,7 +60,7 @@ function LandingFaqSection() {
             <div className="relative z-[1] overflow-hidden rounded-2xl ring-1 ring-brand-stroke-soft/90 shadow-hero-search-kit">
               <img
                 src={FAQ_PANEL_IMG}
-                alt="Nigerian physician in a white coat reviewing notes on a clipboard."
+                alt={t('landing.hero.faqDoctorAlt')}
                 width={960}
                 height={1200}
                 sizes="(min-width: 1024px) 46vw, 100vw"
@@ -201,7 +75,7 @@ function LandingFaqSection() {
                   </span>
                   <div className="text-left leading-tight">
                     <p className="text-lg font-extrabold text-brand-navy">95k+</p>
-                    <p className="text-xs font-semibold text-brand-body">Happy Patients</p>
+                    <p className="text-xs font-semibold text-brand-body">{t('landing.faq.happyPatients')}</p>
                   </div>
                 </div>
               </figcaption>
@@ -209,7 +83,7 @@ function LandingFaqSection() {
           </figure>
 
           <div className="flex min-w-0 flex-col gap-3.5">
-            {LANDING_FAQ.map((item, idx) => {
+            {faq.map((item, idx) => {
               const expanded = openIndex === idx;
               const panelId = `landing-faq-panel-${idx}`;
               const headingId = `landing-faq-heading-${idx}`;
@@ -264,7 +138,7 @@ function LandingFaqSection() {
 
             <p className="pt-5 text-center text-sm lg:text-left">
               <Link to={ROUTES.faq} className="font-semibold text-brand-hero-blue underline-offset-4 hover:text-brand-navy hover:underline">
-                Read more on our FAQ page
+                {t('landing.faq.readMore')}
               </Link>
             </p>
           </div>
@@ -275,6 +149,8 @@ function LandingFaqSection() {
 }
 
 function LandingSpecialtiesSection() {
+  const { t } = useTranslation();
+  const { serviceShortcuts, specialityShowcase } = useLandingCopy();
   const railRef = useRef<HTMLDivElement>(null);
   const step = useCallback(() => {
     const w = railRef.current?.offsetWidth ?? 280;
@@ -292,7 +168,7 @@ function LandingSpecialtiesSection() {
     <section id="specialties" className="scroll-mt-28 border-y border-brand-stroke-soft bg-[#fafcfe] py-12 lg:py-16">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-10">
         <div className="mb-14 grid grid-cols-2 gap-4 sm:mb-18 sm:grid-cols-3 sm:gap-5 lg:mb-24 lg:grid-cols-6 lg:gap-7 xl:mb-28 xl:gap-8">
-          {SERVICE_SHORTCUTS.map(({ label, href, Icon, tone }) => (
+          {serviceShortcuts.map(({ label, href, Icon, tone }) => (
             <Link
               key={label}
               to={href}
@@ -314,14 +190,14 @@ function LandingSpecialtiesSection() {
 
         <div className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <h2 className="relative shrink-0 text-2xl font-extrabold text-brand-navy sm:text-[1.65rem] lg:text-[2rem]">
-            Specialities
+            {t('landing.specialities.heading')}
             <Plus className="absolute -right-6 top-1 size-[1rem] text-brand-hero-blue sm:-right-8 sm:size-5" strokeWidth={2.4} aria-hidden />
           </h2>
           <div className="flex justify-end gap-2 sm:shrink-0">
             <button
               type="button"
               onClick={() => scrollRail(-1)}
-              aria-label="Scroll specialties left"
+              aria-label={t('landing.specialities.scrollLeft')}
               className="flex size-10 items-center justify-center rounded-full border border-brand-stroke-soft bg-white text-brand-navy shadow-sm transition hover:border-brand-hero-blue/35 hover:bg-brand-landing/70"
             >
               <ChevronLeft className="size-5" strokeWidth={2} aria-hidden />
@@ -329,7 +205,7 @@ function LandingSpecialtiesSection() {
             <button
               type="button"
               onClick={() => scrollRail(1)}
-              aria-label="Scroll specialties right"
+              aria-label={t('landing.specialities.scrollRight')}
               className="flex size-10 items-center justify-center rounded-full border border-brand-hero-blue/25 bg-brand-hero-blue text-white shadow-sm transition hover:brightness-105"
             >
               <ChevronRight className="size-5" strokeWidth={2} aria-hidden />
@@ -342,10 +218,10 @@ function LandingSpecialtiesSection() {
           ref={railRef}
           className="mt-8 flex gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-1 pb-8 pt-5 sm:mt-10 sm:pb-9 sm:pt-6 lg:mt-[2.625rem] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {SPECIALITY_SHOWCASE.map(({ name, Icon, highlight }) => (
+          {specialityShowcase.map(({ name, searchName, Icon, highlight }) => (
             <Link
               key={name}
-              to={`${ROUTES.findDoctor}?search=${encodeURIComponent(name)}`}
+              to={`${ROUTES.findDoctor}?search=${encodeURIComponent(searchName)}`}
               className={cn(
                 'flex w-[41%] min-w-[9.25rem] max-w-[10.25rem] shrink-0 snap-start flex-col items-center gap-3 rounded-2xl bg-white px-3 pb-4 pt-5 text-center shadow-hero-search-kit ring-1 ring-brand-stroke-soft/85 transition-[box-shadow,ring-color] hover:z-10 hover:shadow-float hover:ring-2 hover:ring-brand-hero-blue/35 sm:w-[26%] sm:min-w-[8.85rem]',
                 highlight ? 'ring-2 ring-brand-hero-blue/55' : '',
@@ -372,7 +248,7 @@ function LandingSpecialtiesSection() {
             className="w-full max-w-sm rounded-full border-0 bg-gradient-search-pill px-9 text-[0.9rem] font-bold text-white shadow-sm hover:brightness-[1.04] sm:w-auto sm:min-w-[min(100%,17.5rem)]"
             asChild
           >
-            <Link to={ROUTES.specialties}>See All Specialities</Link>
+            <Link to={ROUTES.specialties}>{t('landing.specialities.seeAll')}</Link>
           </Button>
         </div>
       </div>
@@ -382,6 +258,7 @@ function LandingSpecialtiesSection() {
 
 /** Hero right column: stacked “target” rounds + circular portrait — rings stay visible below the photo */
 function HeroDoctorIllustration() {
+  const { t } = useTranslation();
   return (
     <div className="relative mx-auto w-full max-w-[340px] min-[420px]:max-w-[400px] sm:max-w-[440px] lg:mx-0 lg:max-w-none lg:justify-self-end">
       <div className="relative mx-auto aspect-square w-[min(100%,440px)] sm:w-[min(100%,470px)] lg:w-[min(100%,560px)] xl:w-[min(100%,580px)]">
@@ -438,7 +315,7 @@ function HeroDoctorIllustration() {
             <div className="size-[min(240px,74vw)] shrink-0 overflow-hidden rounded-full ring-[4px] ring-white sm:size-[256px] md:size-[274px] lg:size-[292px] xl:size-[304px]">
               <img
                 src={DOCTOR_IMG}
-                alt="Nigerian Muslim female physician in a white coat and medical hijab."
+                alt={t('landing.hero.doctorAlt')}
                 className="h-full w-full object-cover object-[50%_6%]"
                 width={518}
                 height={640}
@@ -454,7 +331,7 @@ function HeroDoctorIllustration() {
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-cyan/12 sm:size-9">
               <Check className="size-4 text-brand-cyan sm:size-5" strokeWidth={2.8} aria-hidden />
             </span>
-            <span className="text-xs font-semibold text-brand-navy sm:text-sm">Regular Check-up</span>
+            <span className="text-xs font-semibold text-brand-navy sm:text-sm">{t('landing.hero.checkup')}</span>
           </div>
         </div>
 
@@ -469,20 +346,20 @@ function HeroDoctorIllustration() {
               <p className="truncate text-xs font-bold text-brand-navy sm:text-sm">Adamu Suleiman</p>
               <p className="text-[11px] text-brand-body sm:text-xs">MBBS, Cardiologist</p>
               <Link to={ROUTES.findDoctor} className="text-[11px] font-semibold text-brand-cyan hover:underline sm:text-xs">
-                Book Now
+                {t('landing.hero.bookNow')}
               </Link>
             </div>
           </div>
         </div>
 
         <div className="absolute bottom-[4%] right-[-4%] z-20 rounded-[1.35rem] bg-white/95 px-3 py-2.5 shadow-float backdrop-blur-sm ring-1 ring-brand-stroke-soft/70 max-[389px]:right-[-2%] max-[389px]:scale-[0.9] max-[389px]:bottom-[2%] sm:right-[-2%] sm:rounded-3xl sm:px-4 sm:py-3 md:bottom-[6%]">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-brand-navy sm:text-xs">Meet Our Doctors</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-brand-navy sm:text-xs">{t('landing.hero.meetDoctors')}</p>
           <div className="mt-2 flex items-center pl-0.5">
             {AV_ROUND.map((src, i) => (
               <img
                 key={src}
                 src={src}
-                alt={`Verified doctor ${i + 1}`}
+                alt={t('landing.hero.verifiedDoctorAlt', { n: i + 1 })}
                 className="-ml-2 size-8 rounded-full border-2 border-white object-cover object-top first:ml-0 sm:size-10"
                 width={40}
                 height={40}
@@ -500,11 +377,14 @@ function HeroDoctorIllustration() {
 }
 
 export default function LandingPage() {
+  const { t } = useTranslation();
+  const { howItWorksSteps, stats, testimonials } = useLandingCopy();
+
   return (
     <>
       <Helmet>
-        <title>MRD Online Clinic — Consult best doctors online</title>
-        <meta name="description" content="Consult best doctors at your nearby location. Book visits, prescriptions, and care online." />
+        <title>{t('landing.metaTitle')}</title>
+        <meta name="description" content={t('landing.metaDescription')} />
       </Helmet>
 
       {/* Hero — mobile: headline → illustration → search; lg: copy+search column | spanning illustration */}
@@ -516,14 +396,14 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 items-center gap-y-7 lg:grid-cols-2 lg:gap-x-12 lg:gap-y-10 xl:gap-x-16 2xl:gap-x-20">
           <header className="max-w-xl lg:max-w-2xl lg:col-start-1 lg:row-start-1 xl:max-w-none">
             <h1 className="text-balance font-sans text-4xl font-extrabold leading-[1.08] tracking-tight text-brand-navy sm:text-[2.8125rem] lg:text-[3.25rem] xl:text-[3.625rem]">
-              Consult{' '}
+              {t('landing.hero.titleLead')}{' '}
               <span className="bg-gradient-brand-primary bg-clip-text font-extrabold text-transparent">
-                Best Doctors
+                {t('landing.hero.titleHighlight')}
               </span>{' '}
-              Your Nearby Location.
+              {t('landing.hero.titleTail')}
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-brand-body sm:mt-6 sm:text-xl">
-              Embark on your healing journey with MRD Online Clinic.
+              {t('landing.hero.subtitle')}
             </p>
             <div className="mt-6 sm:mt-7">
               <Button
@@ -532,7 +412,7 @@ export default function LandingPage() {
                 className="min-h-[3.75rem] px-12 py-8 text-lg font-bold shadow-lg sm:min-h-[4rem] sm:px-14 sm:text-xl"
                 asChild
               >
-                <Link to={ROUTES.findDoctor}>Start a Consult</Link>
+                <Link to={ROUTES.findDoctor}>{t('landing.hero.cta')}</Link>
               </Button>
             </div>
           </header>
@@ -544,9 +424,7 @@ export default function LandingPage() {
           <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-center">{/* Doctor + 3-round backdrop */}
             <figure className="m-0" aria-label="Care team spotlight">
               <HeroDoctorIllustration />
-              <figcaption className="sr-only">
-                Smiling clinician with appointment highlights — book verified practitioners anytime.
-              </figcaption>
+              <figcaption className="sr-only">{t('landing.hero.figcaption')}</figcaption>
             </figure>
           </div>
         </div>
@@ -556,12 +434,7 @@ export default function LandingPage() {
       <section className="border-y border-brand-stroke-soft bg-white py-10">
         <div className="mx-auto w-full max-w-site px-4 sm:px-6 lg:px-8">
           <dl className="grid grid-cols-2 gap-y-8 text-center sm:grid-cols-4">
-            {[
-              { value: '12K+', label: 'Verified Doctors' },
-              { value: '1M+', label: 'Happy Patients' },
-              { value: '250+', label: 'Clinics' },
-              { value: '4.8★', label: 'Avg. Rating' },
-            ].map((s) => (
+            {stats.map((s) => (
               <div key={s.label}>
                 <dt className="bg-gradient-brand-primary bg-clip-text text-[2.25rem] font-extrabold leading-none text-transparent sm:text-[2.75rem]">
                   {s.value}
@@ -580,30 +453,27 @@ export default function LandingPage() {
         <div className="mx-auto w-full max-w-site px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-12">
             <div>
-              <h2 className="text-3xl font-bold text-brand-navy lg:text-[2rem]">For patients</h2>
-              <p className="mt-4 text-lg text-brand-body">
-                Find verified practitioners, book a visit, chat with your care team, and manage prescriptions—all in one
-                place.
-              </p>
+              <h2 className="text-3xl font-bold text-brand-navy lg:text-[2rem]">{t('landing.patients.heading')}</h2>
+              <p className="mt-4 text-lg text-brand-body">{t('landing.patients.intro')}</p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button variant="navCyan" asChild size="lg" className="rounded-lg px-8">
-                  <Link to={ROUTES.registerPatient}>Register as patient</Link>
+                  <Link to={ROUTES.registerPatient}>{t('landing.patients.register')}</Link>
                 </Button>
                 <Button variant="outline" asChild size="lg" className="rounded-lg border-brand-stroke-strong px-8 font-semibold text-brand-navy">
-                  <Link to={ROUTES.findDoctor}>Browse practitioners</Link>
+                  <Link to={ROUTES.findDoctor}>{t('landing.patients.browse')}</Link>
                 </Button>
               </div>
             </div>
             <div className="rounded-2xl border border-brand-stroke-soft bg-brand-marketing p-8">
               <ul className="space-y-3 text-brand-body">
                 <li className="flex gap-3">
-                  <Check className="mt-1 size-5 shrink-0 text-brand-cyan" aria-hidden /> Search by specialty or name
+                  <Check className="mt-1 size-5 shrink-0 text-brand-cyan" aria-hidden /> {t('landing.patients.bulletSearch')}
                 </li>
                 <li className="flex gap-3">
-                  <Check className="mt-1 size-5 shrink-0 text-brand-cyan" aria-hidden /> Secure messaging after booking
+                  <Check className="mt-1 size-5 shrink-0 text-brand-cyan" aria-hidden /> {t('landing.patients.bulletMessaging')}
                 </li>
                 <li className="flex gap-3">
-                  <Check className="mt-1 size-5 shrink-0 text-brand-cyan" aria-hidden /> Digital prescriptions where appropriate
+                  <Check className="mt-1 size-5 shrink-0 text-brand-cyan" aria-hidden /> {t('landing.patients.bulletRx')}
                 </li>
               </ul>
             </div>
@@ -651,7 +521,7 @@ export default function LandingPage() {
               >
                 <img
                   src={HOW_IT_WORKS_IMG}
-                  alt="Nigerian clinician in a modern clinic using a laptop for patient care."
+                  alt={t('landing.hero.howItWorksAlt')}
                   width={900}
                   height={600}
                   sizes="(min-width: 1024px) 38vw, (min-width: 640px) 90vw, 100vw"
@@ -665,12 +535,12 @@ export default function LandingPage() {
             <div className="order-1 flex min-h-0 flex-col lg:order-2 lg:h-full">
               <div className="shrink-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-cyan sm:text-sm">
-                  How it works
+                  {t('landing.howItWorks.badge')}
                 </p>
                 <h2 className="mt-2 text-balance text-[1.75rem] font-extrabold leading-[1.12] text-brand-navy sm:text-[2rem] lg:mt-2.5 lg:text-[2.25rem]">
-                  <span className="font-black text-brand-hero-blue tabular-nums">4</span> easy steps to get your{' '}
+                  <span className="font-black text-brand-hero-blue tabular-nums">4</span> {t('landing.howItWorks.headingLead')}{' '}
                   <span className="relative inline-block">
-                    solution
+                    {t('landing.howItWorks.headingEm')}
                     <span className="absolute -right-7 top-[-2px] flex sm:-right-9" aria-hidden>
                       <Plus className="size-[1rem] text-brand-hero-blue drop-shadow-[0_1px_0_rgba(255,255,255,0.85)] sm:size-[1.2rem]" strokeWidth={3} />
                       <Plus className="-ml-2 size-[1rem] text-brand-cyan sm:-ml-2.5 sm:size-[1.2rem]" strokeWidth={3} />
@@ -678,17 +548,16 @@ export default function LandingPage() {
                   </span>
                 </h2>
                 <p className="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-brand-body sm:mt-3.5 sm:text-base lg:mt-4 lg:text-lg lg:leading-relaxed">
-                  From search to prescriptions, every stage stays on-platform so you waste less time and get clearer next
-                  steps.
+                  {t('landing.howItWorks.intro')}
                 </p>
               </div>
 
               <ul className="mt-8 grid min-h-0 flex-1 gap-6 sm:grid-cols-2 sm:gap-x-10 sm:gap-y-7 lg:mt-10 lg:auto-rows-fr lg:gap-x-12 lg:gap-y-10 lg:self-stretch lg:content-between">
-                {HOW_IT_WORKS_STEPS.map(({ title, description, Icon }, idx) => {
-                  const isPharmacy = title === 'Pharmacy';
+                {howItWorksSteps.map(({ key, title, description, Icon }, idx) => {
+                  const isPharmacy = key === 'pharmacy';
                   return (
                     <li
-                      key={title}
+                      key={key}
                       id={isPharmacy ? 'pharmacy' : undefined}
                       className={cn('flex gap-4', isPharmacy && 'scroll-mt-28')}
                     >
@@ -719,31 +588,31 @@ export default function LandingPage() {
       <section className="border-t border-brand-stroke-soft bg-white py-16">
         <div className="mx-auto w-full max-w-site px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-brand-navy lg:text-[2rem]">What Patients Say</h2>
-            <p className="mx-auto mt-3 max-w-xl text-brand-body">Real experiences from patients across Nigeria.</p>
+            <h2 className="text-3xl font-bold text-brand-navy lg:text-[2rem]">{t('landing.testimonials.heading')}</h2>
+            <p className="mx-auto mt-3 max-w-xl text-brand-body">{t('landing.testimonials.subtitle')}</p>
           </div>
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
+            {testimonials.map((item) => (
               <article
-                key={t.name}
+                key={item.name}
                 className="rounded-2xl border border-brand-stroke-soft bg-white p-6 shadow-sm transition hover:shadow-float"
               >
-                <div className="flex gap-0.5" aria-label={`${t.rating} out of 5 stars`}>
-                  {Array.from({ length: t.rating }).map((_, i) => (
+                <div className="flex gap-0.5" aria-label={t('landing.testimonials.starsAria', { rating: item.rating })}>
+                  {Array.from({ length: item.rating }).map((_, i) => (
                     <Star key={i} className="size-4 fill-amber-400 text-amber-400" aria-hidden />
                   ))}
                 </div>
-                <p className="mt-4 text-sm leading-relaxed text-brand-body">"{t.quote}"</p>
+                <p className="mt-4 text-sm leading-relaxed text-brand-body">&ldquo;{item.quote}&rdquo;</p>
                 <div className="mt-5 flex items-center gap-3">
                   <div
                     aria-hidden
                     className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-brand-primary text-sm font-bold text-white"
                   >
-                    {t.name[0]}
+                    {item.name[0]}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-brand-navy">{t.name}</p>
-                    <p className="text-xs text-brand-body">{t.location}</p>
+                    <p className="text-sm font-bold text-brand-navy">{item.name}</p>
+                    <p className="text-xs text-brand-body">{item.location}</p>
                   </div>
                 </div>
               </article>

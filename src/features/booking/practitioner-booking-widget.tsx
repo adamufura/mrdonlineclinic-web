@@ -14,6 +14,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Clock, MapPin, Sparkles, Star } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -99,6 +100,7 @@ export function PractitionerBookingWidget({
   loginPath,
   className,
 }: PractitionerBookingWidgetProps) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const parsed = useMemo(() => parseSlots(Array.isArray(slots) ? slots : []), [slots]);
   const daysWithSlots = useMemo(() => {
@@ -113,8 +115,12 @@ export function PractitionerBookingWidget({
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date>(() => startOfDay(new Date()));
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
-  const [reason, setReason] = useState('Consultation');
+  const [reason, setReason] = useState('');
   const [jumpedToFirstSlot, setJumpedToFirstSlot] = useState(false);
+
+  useEffect(() => {
+    setReason((prev) => prev || t('patient.booking.consultation'));
+  }, [t]);
 
   useEffect(() => {
     if (!initialSlotId || !parsed.length) return;
@@ -150,8 +156,8 @@ export function PractitionerBookingWidget({
   const evening = slotsForSelectedDay.filter((s) => bucketHour(s.start.getHours()) === 'evening');
 
   const specs = specialtyNames(pr);
-  const primarySpec = specs[0] ?? 'Consultation';
-  const secondarySpec = specs[1] ?? 'General visit';
+  const primarySpec = specs[0] ?? t('patient.booking.consultation');
+  const secondarySpec = specs[1] ?? t('patient.booking.generalVisit');
   const displayName = `${String(pr.firstName ?? '')} ${String(pr.lastName ?? '')}`.trim() || 'Practitioner';
   const drName = displayName.startsWith('Dr.') ? displayName : `Dr. ${displayName}`;
   const rating = typeof pr.averageRating === 'number' ? pr.averageRating : null;
@@ -162,12 +168,12 @@ export function PractitionerBookingWidget({
   const bookMut = useMutation({
     mutationFn: bookAppointment,
     onSuccess: async (data) => {
-      toast.success('Request sent. Your practitioner will confirm shortly.');
+      toast.success(t('patient.booking.requestSent'));
       await qc.invalidateQueries({ queryKey: ['patients', 'appointments'] });
       const id = data._id != null ? String(data._id) : null;
       if (id && onBooked) onBooked(id);
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : 'Booking failed'),
+    onError: (e) => toast.error(e instanceof Error ? e.message : t('patient.booking.bookingFailed')),
   });
 
   const monthStart = startOfMonth(viewMonth);
@@ -197,7 +203,7 @@ export function PractitionerBookingWidget({
           <div
             className="absolute right-3 top-3 z-[2] sm:right-5 sm:top-4"
             role="img"
-            aria-label={`Average rating ${rating.toFixed(1)} out of 5, ${reviewCount} reviews`}
+            aria-label={t('patient.booking.ratingAria', { rating: rating.toFixed(1), count: reviewCount })}
           >
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1.5 text-sm font-semibold text-amber-900 shadow-sm ring-1 ring-amber-200/80">
               <Star className="size-4 shrink-0 fill-amber-400 text-amber-500" aria-hidden />
@@ -225,7 +231,7 @@ export function PractitionerBookingWidget({
                 {isVerified ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-500/20">
                     <Sparkles className="size-3" aria-hidden />
-                    Verified
+                    {t('patient.booking.verified')}
                   </span>
                 ) : null}
               </div>
@@ -235,7 +241,7 @@ export function PractitionerBookingWidget({
               {specs.length ? (
                 <p className="mt-3 text-sm font-medium text-violet-700">{specs.join(' · ')}</p>
               ) : (
-                <p className="mt-3 text-sm font-medium text-violet-700">Medical practitioner</p>
+                <p className="mt-3 text-sm font-medium text-violet-700">{t('patient.booking.medicalPractitioner')}</p>
               )}
               {locationLine ? (
                 <p className="mt-2 flex items-start justify-center gap-2 text-sm text-slate-600 lg:justify-start">
@@ -248,23 +254,23 @@ export function PractitionerBookingWidget({
 
           <div className="mt-6 grid gap-3 rounded-xl bg-slate-50/90 p-4 sm:grid-cols-2 lg:grid-cols-4">
             <SummaryCell
-              label="Service"
+              label={t('patient.booking.service')}
               value={
                 selectedSlot
                   ? `${primarySpec} (${selectedSlot.durationMinutes} min)`
-                  : `${primarySpec} — pick a time`
+                  : `${primarySpec} — ${t('patient.booking.pickTime')}`
               }
             />
-            <SummaryCell label="Focus" value={secondarySpec} muted={!selectedSlot} />
+            <SummaryCell label={t('patient.booking.focus')} value={secondarySpec} muted={!selectedSlot} />
             <SummaryCell
-              label="Date & time"
+              label={t('patient.booking.dateTime')}
               value={
                 selectedSlot
                   ? `${format(selectedSlot.start, 'h:mm a')} – ${format(selectedSlot.end, 'h:mm a')}, ${format(selectedSlot.start, 'd MMM yyyy')}`
-                  : 'Select below'
+                  : t('patient.booking.selectBelow')
               }
             />
-            <SummaryCell label="Visit type" value="Online (MRD Clinic)" />
+            <SummaryCell label={t('patient.booking.visitType')} value={t('patient.booking.onlineVisit')} />
           </div>
         </div>
 
@@ -275,7 +281,7 @@ export function PractitionerBookingWidget({
                 type="button"
                 className="grid size-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
                 onClick={goPrevMonth}
-                aria-label="Previous month"
+                aria-label={t('patient.booking.prevMonth')}
               >
                 <ChevronLeft className="size-5" />
               </button>
@@ -286,7 +292,7 @@ export function PractitionerBookingWidget({
                 type="button"
                 className="grid size-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
                 onClick={goNextMonth}
-                aria-label="Next month"
+                aria-label={t('patient.booking.nextMonth')}
               >
                 <ChevronRight className="size-5" />
               </button>
@@ -336,7 +342,7 @@ export function PractitionerBookingWidget({
             <div className="mb-4 flex items-center gap-2 text-slate-800">
               <Clock className="size-5 text-sky-600" aria-hidden />
               <div>
-                <p className="font-display text-base font-semibold text-[#0f172a]">Available times</p>
+                <p className="font-display text-base font-semibold text-[#0f172a]">{t('patient.booking.availableTimes')}</p>
                 <p className="text-xs text-slate-500">{format(selectedDay, 'EEEE, MMMM d')}</p>
               </div>
             </div>
@@ -349,22 +355,22 @@ export function PractitionerBookingWidget({
               </div>
             ) : null}
             {slotsError ? (
-              <p className="text-sm text-red-600">We couldn&apos;t load availability. Try again later.</p>
+              <p className="text-sm text-red-600">{t('patient.booking.couldNotLoadAvailability')}</p>
             ) : null}
 
             {!slotsLoading && !slotsError ? (
               <div className="space-y-6">
-                <TimeBucket label="Morning" slots={morning} selectedId={selectedSlotId} onSelect={setSelectedSlotId} />
+                <TimeBucket label={t('patient.booking.morning')} slots={morning} selectedId={selectedSlotId} onSelect={setSelectedSlotId} />
                 <TimeBucket
-                  label="Afternoon"
+                  label={t('patient.booking.afternoon')}
                   slots={afternoon}
                   selectedId={selectedSlotId}
                   onSelect={setSelectedSlotId}
                 />
-                <TimeBucket label="Evening" slots={evening} selectedId={selectedSlotId} onSelect={setSelectedSlotId} />
+                <TimeBucket label={t('patient.booking.evening')} slots={evening} selectedId={selectedSlotId} onSelect={setSelectedSlotId} />
                 {slotsForSelectedDay.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
-                    No openings this day. Choose another date with a blue dot.
+                    {t('patient.booking.noOpenings')}
                   </p>
                 ) : null}
               </div>
@@ -373,7 +379,7 @@ export function PractitionerBookingWidget({
             {selectedSlotId && allowSubmit ? (
               <div className="mt-6 space-y-3 border-t border-slate-100 pt-6">
                 <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="visit-reason">
-                  Reason for visit
+                  {t('patient.booking.reasonForVisit')}
                 </label>
                 <Textarea
                   id="visit-reason"
@@ -381,7 +387,7 @@ export function PractitionerBookingWidget({
                   onChange={(e) => setReason(e.target.value)}
                   rows={3}
                   className="min-h-[100px] resize-none border-slate-200 bg-white text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus-visible:border-sky-500 focus-visible:ring-sky-500/20 dark:bg-white dark:text-slate-900 dark:placeholder:text-slate-400"
-                  placeholder="Briefly describe what you’d like to discuss"
+                  placeholder={t('patient.booking.reasonPlaceholder')}
                 />
                 <Button
                   type="button"
@@ -393,7 +399,7 @@ export function PractitionerBookingWidget({
                     bookMut.mutate({ slotId: selectedSlotId, reasonForVisit: r });
                   }}
                 >
-                  {bookMut.isPending ? 'Sending request…' : 'Request this appointment'}
+                  {bookMut.isPending ? t('patient.booking.sendingRequest') : t('patient.booking.requestAppointment')}
                 </Button>
               </div>
             ) : null}
@@ -401,9 +407,9 @@ export function PractitionerBookingWidget({
             {selectedSlotId && !allowSubmit ? (
               <div className="mt-6 space-y-3 border-t border-slate-100 pt-6">
                 <Button asChild className="w-full rounded-xl bg-sky-600 py-6 text-base font-semibold text-white shadow-lg hover:bg-sky-700">
-                  <Link to={guestLoginHref}>Log in to book this time</Link>
+                  <Link to={guestLoginHref}>{t('patient.booking.loginToBook')}</Link>
                 </Button>
-                <p className="text-center text-xs text-slate-500">We&apos;ll bring you back here after sign-in.</p>
+                <p className="text-center text-xs text-slate-500">{t('patient.booking.loginReturnHint')}</p>
               </div>
             ) : null}
           </div>

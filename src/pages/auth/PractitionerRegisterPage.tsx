@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
+import { useMemo } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -18,26 +20,43 @@ import { Label } from '@/components/ui/label';
 import { registerPractitioner } from '@/features/auth/api';
 import { listPublicSpecialties } from '@/features/specialties/api';
 import { normalizeAxiosError } from '@/lib/api/errors';
-import { mongoIdSchema, passwordSchema } from '@/lib/validators/auth';
+import { createMongoIdSchema, createPasswordSchema } from '@/lib/validators/auth-schemas';
 import { ROUTES } from '@/router/routes';
 
-const schema = z
-  .object({
-    firstName: z.string().min(1, 'Required'),
-    lastName: z.string().min(1, 'Required'),
-    email: z.string().email(),
-    phoneNumber: z.string().min(5, 'Enter a valid phone number'),
-    password: passwordSchema,
-    confirmPassword: z.string(),
-    specialtyId: z.string().min(1, 'Select a specialty').pipe(mongoIdSchema),
-    acceptTerms: z.boolean().refine((v) => v === true, { message: 'You must accept the terms' }),
-  })
-  .refine((d) => d.password === d.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' });
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  confirmPassword: string;
+  specialtyId: string;
+  acceptTerms: boolean;
+};
 
 export default function PractitionerRegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const schema = useMemo(
+    () =>
+      z
+        .object({
+          firstName: z.string().min(1, t('auth.validation.required')),
+          lastName: z.string().min(1, t('auth.validation.required')),
+          email: z.string().email(),
+          phoneNumber: z.string().min(5, t('auth.validation.phoneInvalid')),
+          password: createPasswordSchema(t),
+          confirmPassword: z.string(),
+          specialtyId: z.string().min(1, t('auth.validation.selectSpecialty')).pipe(createMongoIdSchema(t)),
+          acceptTerms: z.boolean().refine((v) => v === true, { message: t('auth.validation.acceptTerms') }),
+        })
+        .refine((d) => d.password === d.confirmPassword, {
+          path: ['confirmPassword'],
+          message: t('auth.validation.passwordMismatch'),
+        }),
+    [t],
+  );
   const specialtiesQuery = useQuery({
     queryKey: ['specialties', 'public'],
     queryFn: listPublicSpecialties,
@@ -77,16 +96,16 @@ export default function PractitionerRegisterPage() {
     <>
       <AccountCreatingOverlay open={mutation.isPending} />
       <Helmet>
-        <title>Practitioner registration — MRD Online Clinic</title>
+        <title>{t('auth.registerPractitioner.title')}</title>
       </Helmet>
       <div className="space-y-0.5">
-        <AuthEyebrow>Practitioner sign up</AuthEyebrow>
+        <AuthEyebrow>{t('auth.registerPractitioner.eyebrow')}</AuthEyebrow>
         <h1 className="font-display text-[clamp(1.65rem,3.8vw,2.35rem)] font-normal leading-[1.08] tracking-[-0.02em] text-brand-navy">
-          Join MRD as a <em className="text-brand-hero-blue not-italic">clinician.</em>
+          {t('auth.registerPractitioner.heading')}{' '}
+          <em className="text-brand-hero-blue not-italic">{t('auth.registerPractitioner.headingEm')}</em>
         </h1>
         <p className="mt-2 max-w-md text-[14px] leading-snug text-brand-body sm:text-[15px] sm:leading-relaxed">
-          After you sign in, you can complete your professional profile and submit credentials for admin review before
-          accepting patients.
+          {t('auth.registerPractitioner.intro')}
         </p>
       </div>
 
@@ -98,7 +117,7 @@ export default function PractitionerRegisterPage() {
       >
         <div className="space-y-1.5">
           <Label htmlFor="firstName" className="text-[12px] font-medium text-slate-700">
-            First name
+            {t('auth.registerPatient.firstName')}
           </Label>
           <div className="relative">
             <UserRound className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -115,7 +134,7 @@ export default function PractitionerRegisterPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="lastName" className="text-[12px] font-medium text-slate-700">
-            Last name
+            {t('auth.registerPatient.lastName')}
           </Label>
           <div className="relative">
             <UserRound className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -132,7 +151,7 @@ export default function PractitionerRegisterPage() {
 
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="email" className="text-[12px] font-medium text-slate-700">
-            Email address
+            {t('auth.registerPatient.email')}
           </Label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -150,7 +169,7 @@ export default function PractitionerRegisterPage() {
 
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="specialtyId" className="text-[12px] font-medium text-slate-700">
-            Specialty
+            {t('auth.registerPractitioner.specialty')}
           </Label>
           <div className="relative">
             <Stethoscope className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -160,7 +179,7 @@ export default function PractitionerRegisterPage() {
               className="flex h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white py-2 pl-12 pr-10 text-[15px] text-slate-900 shadow-sm transition-colors focus-visible:border-sky-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900"
               {...form.register('specialtyId')}
             >
-              <option value="">Select a specialty</option>
+              <option value="">{t('auth.registerPractitioner.selectSpecialty')}</option>
               {specialtiesQuery.data?.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -170,7 +189,7 @@ export default function PractitionerRegisterPage() {
             <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
           </div>
           {specialtiesQuery.isError ? (
-            <p className="text-sm text-destructive">Could not load specialties. Is the API running?</p>
+            <p className="text-sm text-destructive">{t('auth.registerPractitioner.specialtiesLoadError')}</p>
           ) : null}
           {form.formState.errors.specialtyId ? (
             <p className="text-sm text-destructive">{form.formState.errors.specialtyId.message}</p>
@@ -179,7 +198,7 @@ export default function PractitionerRegisterPage() {
 
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="phoneNumber" className="text-[12px] font-medium text-slate-700">
-            Phone number
+            {t('auth.registerPatient.phone')}
           </Label>
           <div className="relative">
             <Phone className="pointer-events-none absolute left-4 top-1/2 size-[1.125rem] -translate-y-1/2 text-slate-400" aria-hidden />
@@ -197,7 +216,7 @@ export default function PractitionerRegisterPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="password" className="text-[12px] font-medium text-slate-700">
-            Password
+            {t('auth.registerPatient.password')}
           </Label>
           <PasswordInput
             id="password"
@@ -216,7 +235,7 @@ export default function PractitionerRegisterPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="confirmPassword" className="text-[12px] font-medium text-slate-700">
-            Confirm password
+            {t('auth.registerPatient.confirmPassword')}
           </Label>
           <PasswordInput
             id="confirmPassword"
@@ -235,15 +254,15 @@ export default function PractitionerRegisterPage() {
         <label className="col-span-2 flex cursor-pointer items-start gap-2.5 text-[12px] leading-snug text-brand-body sm:text-[13px]">
           <input type="checkbox" className="mt-0.5 accent-sky-500" {...form.register('acceptTerms')} />
           <span>
-            I agree to the{' '}
+            {t('auth.registerPractitioner.termsPrefix')}{' '}
             <Link to="/terms" className="font-semibold text-brand-navy underline-offset-2 hover:underline">
-              terms of service
+              {t('auth.registerPractitioner.termsLink')}
             </Link>{' '}
-            and{' '}
+            {t('auth.registerPractitioner.termsAnd')}{' '}
             <Link to="/privacy" className="font-semibold text-brand-navy underline-offset-2 hover:underline">
-              privacy policy
+              {t('auth.registerPractitioner.privacyLink')}
             </Link>
-            .
+            {t('auth.registerPractitioner.termsSuffix')}
           </span>
         </label>
         {form.formState.errors.acceptTerms ? (
@@ -258,24 +277,24 @@ export default function PractitionerRegisterPage() {
           {mutation.isPending ? (
             <>
               <Loader2 className="size-5 shrink-0 animate-spin" strokeWidth={2.5} aria-hidden />
-              Creating account…
+              {t('auth.registerPractitioner.creating')}
             </>
           ) : (
             <>
-              Create my account
+              {t('auth.registerPractitioner.submit')}
               <ArrowRight className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
             </>
           )}
         </Button>
       </form>
 
-      <AuthDividerOr label="Or" />
+      <AuthDividerOr label={t('auth.or')} />
       <AuthSocialButtons />
 
       <p className="mt-5 text-center text-[13px] text-brand-body">
-        Already have an account?{' '}
+        {t('auth.registerPractitioner.hasAccount')}{' '}
         <Link to={ROUTES.login} className="font-semibold text-sky-800 hover:underline">
-          Log in instead
+          {t('auth.registerPractitioner.logInInstead')}
         </Link>
       </p>
     </>

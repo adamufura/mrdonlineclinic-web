@@ -4,6 +4,7 @@ import { Camera, Loader2, Lock, UserRound } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -79,6 +80,7 @@ function Field({
 }
 
 export default function PatientProfilePage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const authUser = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
@@ -112,7 +114,7 @@ export default function PatientProfilePage() {
   const saveProfile = useMutation({
     mutationFn: (values: PatientProfileFormValues) => patchPatientProfile(profileFormToPatch(values)),
     onSuccess: async () => {
-      toast.success('Profile saved');
+      toast.success(t('patient.profile.profileSaved'));
       await qc.invalidateQueries({ queryKey: ['patients', 'me'] });
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
@@ -125,7 +127,7 @@ export default function PatientProfilePage() {
       if (current) {
         setUser({ ...current, profilePhotoUrl: result.profilePhotoUrl });
       }
-      toast.success('Photo updated');
+      toast.success(t('patient.profile.photoUpdated'));
       await qc.invalidateQueries({ queryKey: ['patients', 'me'] });
     },
     onError: (e) => toast.error(normalizeAxiosError(e).message),
@@ -142,7 +144,7 @@ export default function PatientProfilePage() {
     onSuccess: async (result) => {
       setAccessToken(result.tokens.accessToken);
       pwdForm.reset();
-      toast.success('Password updated. You are still signed in.');
+      toast.success(t('patient.profile.passwordUpdated'));
     },
     onError: (e) => {
       const err = normalizeAxiosError(e);
@@ -158,21 +160,18 @@ export default function PatientProfilePage() {
   return (
     <>
       <Helmet>
-        <title>My account — MRD Online Clinic</title>
+        <title>{t('patient.profile.title')}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
       <div className="mx-auto max-w-4xl space-y-8 pb-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-primary">Account</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">My account</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Update your name, contact details, photo, and password. Allergies and medications are in your health
-              profile.
-            </p>
+            <p className="text-xs font-medium uppercase tracking-wide text-primary">{t('patient.profile.badge')}</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{t('patient.profile.heading')}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{t('patient.profile.introLong')}</p>
           </div>
           <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link to={ROUTES.patient.profileMedical}>Health profile</Link>
+            <Link to={ROUTES.patient.profileMedical}>{t('patient.profile.medicalLink')}</Link>
           </Button>
         </div>
 
@@ -180,11 +179,11 @@ export default function PatientProfilePage() {
           <TabsList className="grid h-11 w-full max-w-md grid-cols-2">
             <TabsTrigger value="personal" className="gap-2">
               <UserRound className="h-4 w-4" aria-hidden />
-              Personal
+              {t('patient.profile.tabPersonal')}
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-2">
               <Lock className="h-4 w-4" aria-hidden />
-              Security
+              {t('patient.profile.tabSecurity')}
             </TabsTrigger>
           </TabsList>
 
@@ -196,9 +195,10 @@ export default function PatientProfilePage() {
                     <UserRound className="h-5 w-5" aria-hidden />
                   </div>
                   <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-lg">Personal information</CardTitle>
+                    <CardTitle className="text-lg">{t('patient.profile.personalTitle')}</CardTitle>
                     <CardDescription className="text-sm">
-                      Signed in as <span className="font-medium text-foreground">{authUser?.email}</span>
+                      {t('patient.profile.signedInAs')}{' '}
+                      <span className="font-medium text-foreground">{authUser?.email}</span>
                     </CardDescription>
                   </div>
                 </div>
@@ -222,10 +222,8 @@ export default function PatientProfilePage() {
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">Profile photo</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      A clear photo helps your care team recognize you during video visits.
-                    </p>
+                    <p className="text-sm font-medium text-foreground">{t('patient.profile.profilePhoto')}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t('patient.profile.photoHintVideo')}</p>
                     <input
                       ref={fileRef}
                       type="file"
@@ -254,9 +252,9 @@ export default function PatientProfilePage() {
                       disabled={uploadPhoto.isPending}
                       onClick={() => fileRef.current?.click()}
                     >
-                      {uploadPhoto.isPending ? 'Uploading…' : 'Change photo'}
+                      {uploadPhoto.isPending ? t('common.loading') : t('patient.profile.changePhoto')}
                     </Button>
-                    <p className="mt-2 text-xs text-muted-foreground">JPG or PNG, max 5MB.</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{t('patient.profile.photoFormat')}</p>
                   </div>
                 </div>
 
@@ -271,15 +269,15 @@ export default function PatientProfilePage() {
                   className={cn('space-y-8', profile.isLoading && 'pointer-events-none opacity-60')}
                   onSubmit={form.handleSubmit((v) => saveProfile.mutate(v))}
                 >
-                  <FormSection title="Legal name" description="As it should appear on prescriptions and records.">
+                  <FormSection title={t('patient.profile.legalName')} description={t('practitioner.profile.legalNameHint')}>
                     <div className="grid gap-5 md:grid-cols-3">
-                      <Field label="First name" htmlFor="firstName" error={form.formState.errors.firstName?.message}>
+                      <Field label={t('patient.profile.firstName')} htmlFor="firstName" error={form.formState.errors.firstName?.message}>
                         <Input id="firstName" autoComplete="given-name" {...form.register('firstName')} />
                       </Field>
-                      <Field label="Middle name" htmlFor="middleName" error={form.formState.errors.middleName?.message}>
+                      <Field label={t('patient.profile.middleName')} htmlFor="middleName" error={form.formState.errors.middleName?.message}>
                         <Input id="middleName" autoComplete="additional-name" {...form.register('middleName')} />
                       </Field>
-                      <Field label="Last name" htmlFor="lastName" error={form.formState.errors.lastName?.message}>
+                      <Field label={t('patient.profile.lastName')} htmlFor="lastName" error={form.formState.errors.lastName?.message}>
                         <Input id="lastName" autoComplete="family-name" {...form.register('lastName')} />
                       </Field>
                     </div>
@@ -287,10 +285,10 @@ export default function PatientProfilePage() {
 
                   <FormSection title="Contact" description="How we reach you about appointments and care.">
                     <div className="grid gap-5 md:grid-cols-2">
-                      <Field label="Phone number" htmlFor="phoneNumber" error={form.formState.errors.phoneNumber?.message}>
+                      <Field label={t('patient.profile.phoneNumber')} htmlFor="phoneNumber" error={form.formState.errors.phoneNumber?.message}>
                         <Input id="phoneNumber" type="tel" autoComplete="tel" placeholder="+234 …" {...form.register('phoneNumber')} />
                       </Field>
-                      <Field label="Date of birth" htmlFor="dob">
+                      <Field label={t('patient.profile.dateOfBirth')} htmlFor="dob">
                         <Input id="dob" type="date" autoComplete="bday" {...form.register('dateOfBirth')} />
                       </Field>
                     </div>
@@ -298,7 +296,7 @@ export default function PatientProfilePage() {
 
                   <FormSection title="Health basics" description="Optional details for your clinical record.">
                     <div className="grid gap-5 md:grid-cols-2">
-                      <Field label="Gender" htmlFor="gender">
+                      <Field label={t('patient.profile.gender')} htmlFor="gender">
                         <Select id="gender" {...form.register('gender')}>
                           <option value="">Prefer not to say</option>
                           <option value="MALE">Male</option>
@@ -307,7 +305,7 @@ export default function PatientProfilePage() {
                           <option value="PREFER_NOT_SAY">Prefer not to say</option>
                         </Select>
                       </Field>
-                      <Field label="Blood group" htmlFor="blood">
+                      <Field label={t('patient.profile.bloodGroup')} htmlFor="blood">
                         <Select id="blood" {...form.register('bloodGroup')}>
                           <option value="">Not specified</option>
                           <option value="A_POS">A+</option>
@@ -332,7 +330,7 @@ export default function PatientProfilePage() {
                           Saving…
                         </>
                       ) : (
-                        'Save changes'
+                        t('patient.profile.saveChanges')
                       )}
                     </Button>
                   </div>
@@ -349,7 +347,7 @@ export default function PatientProfilePage() {
                     <Lock className="h-5 w-5" aria-hidden />
                   </div>
                   <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-lg">Change password</CardTitle>
+                    <CardTitle className="text-lg">{t('patient.profile.securityTitle')}</CardTitle>
                     <CardDescription className="text-sm">
                       Choose a strong password. Other signed-in devices will need to log in again after you update.
                     </CardDescription>
@@ -363,13 +361,13 @@ export default function PatientProfilePage() {
                     changePwd.mutate({ currentPassword: v.currentPassword, newPassword: v.newPassword }),
                   )}
                 >
-                  <Field label="Current password" htmlFor="cur" error={pwdForm.formState.errors.currentPassword?.message}>
+                  <Field label={t('patient.profile.currentPassword')} htmlFor="cur" error={pwdForm.formState.errors.currentPassword?.message}>
                     <PasswordInput id="cur" autoComplete="current-password" {...pwdForm.register('currentPassword')} />
                   </Field>
-                  <Field label="New password" htmlFor="np" error={pwdForm.formState.errors.newPassword?.message}>
+                  <Field label={t('patient.profile.newPassword')} htmlFor="np" error={pwdForm.formState.errors.newPassword?.message}>
                     <PasswordInput id="np" autoComplete="new-password" maxLength={12} {...pwdForm.register('newPassword')} />
                   </Field>
-                  <Field label="Confirm new password" htmlFor="cp" error={pwdForm.formState.errors.confirmPassword?.message}>
+                  <Field label={t('patient.profile.confirmPassword')} htmlFor="cp" error={pwdForm.formState.errors.confirmPassword?.message}>
                     <PasswordInput id="cp" autoComplete="new-password" maxLength={12} {...pwdForm.register('confirmPassword')} />
                   </Field>
                   <div className="flex justify-end pt-2">
@@ -380,7 +378,7 @@ export default function PatientProfilePage() {
                           Updating…
                         </>
                       ) : (
-                        'Update password'
+                        t('patient.profile.updatePassword')
                       )}
                     </Button>
                   </div>

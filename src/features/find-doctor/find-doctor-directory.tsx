@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Loader2, MapPin, Star } from 'lucide-react';
 import { FindDoctorSearchBar, type FindDoctorDraft } from '@/components/marketing/FindDoctorSearchBar';
@@ -49,6 +50,7 @@ type FindDoctorDirectoryProps = {
 };
 
 export function FindDoctorDirectory({ routes, alwaysShowBook = false, className }: FindDoctorDirectoryProps) {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const [searchParams, setSearchParams] = useSearchParams();
   const [draft, setDraft] = useState<FindDoctorDraft>(() => readDraftFromParams(searchParams));
@@ -109,12 +111,12 @@ export function FindDoctorDirectory({ routes, alwaysShowBook = false, className 
   return (
     <div className={cn(className)}>
       <div className="max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Practitioners</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">{t('patient.findDoctor.badge')}</p>
         <h1 className="mt-1 font-display text-[clamp(1.85rem,4vw,2.5rem)] font-normal leading-tight tracking-[-0.02em] text-[#0a1628]">
-          Find a <em className="text-sky-700 not-italic">doctor</em>
+          {t('patient.findDoctor.heading')} <em className="text-sky-700 not-italic">{t('patient.findDoctor.headingEm')}</em>
         </h1>
         <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-[#64748b]">
-          Search by name, narrow by location or specialty, and optionally pick a day to see who has open visit slots.
+          {t('patient.findDoctor.description')}
         </p>
       </div>
 
@@ -132,27 +134,32 @@ export function FindDoctorDirectory({ routes, alwaysShowBook = false, className 
       {directory.isLoading ? (
         <div className="mt-14 flex flex-col items-center justify-center gap-3 text-[#64748b]">
           <Loader2 className="size-9 animate-spin text-sky-600" aria-hidden />
-          <p className="text-sm">Loading practitioners…</p>
+          <p className="text-sm">{t('patient.findDoctor.loading')}</p>
         </div>
       ) : null}
 
       {directory.isError ? (
-        <p className="mt-14 text-center text-sm text-red-600">Could not load practitioners. Check that the API is running.</p>
+        <p className="mt-14 text-center text-sm text-red-600">{t('patient.findDoctor.couldNotLoad')}</p>
       ) : null}
 
       {directory.data ? (
         <>
           <p className="mt-8 text-sm text-[#64748b]">
-            Page {directory.data.meta.page} of {directory.data.meta.totalPages} · {directory.data.meta.total}{' '}
-            {directory.data.meta.total === 1 ? 'practitioner' : 'practitioners'}
+            {t('patient.findDoctor.pageOf', {
+              page: directory.data.meta.page,
+              total: directory.data.meta.totalPages,
+              count: directory.data.meta.total,
+              unit:
+                directory.data.meta.total === 1
+                  ? t('patient.findDoctor.practitioner')
+                  : t('patient.findDoctor.practitioners'),
+            })}
           </p>
 
           {directory.data.items.length === 0 ? (
             <div className="mt-8 rounded-2xl border border-[#e2e8f0] bg-white px-6 py-14 text-center shadow-sm">
-              <p className="font-medium text-[#0a1628]">No practitioners match your filters</p>
-              <p className="mt-2 text-sm text-[#64748b]">
-                Try widening your search, clearing the date filter, or choosing a different specialty.
-              </p>
+              <p className="font-medium text-[#0a1628]">{t('patient.findDoctor.emptyTitle')}</p>
+              <p className="mt-2 text-sm text-[#64748b]">{t('patient.findDoctor.emptyHint')}</p>
             </div>
           ) : (
             <ul className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -182,7 +189,9 @@ export function FindDoctorDirectory({ routes, alwaysShowBook = false, className 
                           <span className="font-medium text-[#0a1628]">{rating}</span>
                           <span className="text-[#64748b]/80">({p.totalReviews ?? 0})</span>
                           <span aria-hidden>·</span>
-                          <span>{p.yearsOfExperience ?? '—'} yrs exp</span>
+                          <span>
+                            {p.yearsOfExperience ?? '—'} {t('patient.findDoctor.yrsExp')}
+                          </span>
                         </p>
                         {p.specialties?.length ? (
                           <p className="mt-1.5 truncate text-xs text-[#64748b]">{p.specialties.map((s) => s.name).join(', ')}</p>
@@ -202,7 +211,7 @@ export function FindDoctorDirectory({ routes, alwaysShowBook = false, className 
                         variant="outline"
                         size="sm"
                       >
-                        <Link to={routes.profile(id)}>Profile</Link>
+                        <Link to={routes.profile(id)}>{t('patient.findDoctor.profile')}</Link>
                       </Button>
                       {showBook ? (
                         <Button
@@ -210,7 +219,7 @@ export function FindDoctorDirectory({ routes, alwaysShowBook = false, className 
                           size="sm"
                           className="flex-1 rounded-xl border-0 bg-gradient-to-br from-sky-500 to-sky-700 text-[13px] font-semibold text-white shadow-sm hover:from-sky-600 hover:to-sky-800"
                         >
-                          <Link to={routes.book(id)}>Book</Link>
+                          <Link to={routes.book(id)}>{t('patient.findDoctor.book')}</Link>
                         </Button>
                       ) : null}
                     </div>
@@ -229,7 +238,7 @@ export function FindDoctorDirectory({ routes, alwaysShowBook = false, className 
                 disabled={page <= 1}
                 onClick={() => updatePage(page - 1)}
               >
-                Previous
+                {t('patient.findDoctor.pagePrev')}
               </Button>
               <Button
                 type="button"
@@ -238,7 +247,7 @@ export function FindDoctorDirectory({ routes, alwaysShowBook = false, className 
                 disabled={page >= (directory.data.meta.totalPages ?? 1)}
                 onClick={() => updatePage(page + 1)}
               >
-                Next
+                {t('patient.findDoctor.pageNext')}
               </Button>
             </div>
           ) : null}

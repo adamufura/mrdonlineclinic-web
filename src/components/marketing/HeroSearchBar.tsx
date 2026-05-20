@@ -1,6 +1,7 @@
 import { format, isValid, parseISO } from 'date-fns';
 import { Calendar, MapPin, Search } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/router/routes';
@@ -25,6 +26,7 @@ const flexDate = 'lg:min-w-[11rem] lg:flex-[6_1_0%]';
 const iconSize = 'size-[1.125rem]';
 
 export function HeroSearchBar({ className }: { className?: string }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [loc, setLoc] = useState('');
@@ -83,7 +85,7 @@ export function HeroSearchBar({ className }: { className?: string }) {
   const dividerBar =
     'hidden w-px shrink-0 self-center bg-[#e8ecf2] lg:block lg:h-[3rem] lg:max-h-[min(54%,3.25rem)]';
 
-  const dateAccessibleLabel = 'Preferred appointment date';
+  const dateAccessibleLabel = t('marketing.heroSearch.dateLabel');
 
   return (
     <form
@@ -111,7 +113,7 @@ export function HeroSearchBar({ className }: { className?: string }) {
           name="hero-q"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search doctors, clinics, hospitals, etc"
+          placeholder={t('marketing.heroSearch.searchPlaceholder')}
           className={cn(inputCls, 'accent-brand-cyan')}
           autoComplete="off"
         />
@@ -126,7 +128,7 @@ export function HeroSearchBar({ className }: { className?: string }) {
           name="hero-location"
           value={loc}
           onChange={(e) => setLoc(e.target.value)}
-          placeholder="Location"
+          placeholder={t('marketing.heroSearch.locationPlaceholder')}
           className={cn(inputCls, 'accent-brand-cyan')}
           autoComplete="off"
         />
@@ -138,7 +140,9 @@ export function HeroSearchBar({ className }: { className?: string }) {
         role="button"
         tabIndex={0}
         aria-label={
-          displayedDate ? `${dateAccessibleLabel}, ${displayedDate}` : `${dateAccessibleLabel}, choose a date`
+          displayedDate
+            ? `${dateAccessibleLabel}, ${displayedDate}`
+            : `${dateAccessibleLabel}, ${t('marketing.heroSearch.chooseDate')}`
         }
         aria-haspopup="true"
         onClick={openDatePicker}
@@ -177,7 +181,7 @@ export function HeroSearchBar({ className }: { className?: string }) {
               displayedDate ? 'text-brand-navy' : 'text-[#9ca3af]',
             )}
           >
-            {displayedDate || 'Date'}
+            {displayedDate || t('marketing.heroSearch.datePlaceholder')}
           </span>
         </div>
       </div>
@@ -192,7 +196,7 @@ export function HeroSearchBar({ className }: { className?: string }) {
             'lg:h-11 lg:min-h-[2.75rem] lg:w-auto lg:min-w-[6rem] lg:px-[2.125rem] lg:text-[0.875rem]',
           )}
         >
-          Search
+          {t('marketing.heroSearch.search')}
         </Button>
       </div>
     </form>

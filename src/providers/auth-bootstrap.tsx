@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { ensureAccessToken } from '@/lib/api/client';
 import { fetchMe } from '@/features/auth/api';
+import { setAppLanguage } from '@/i18n';
+import type { AppLanguage } from '@/types/language';
 import { useAuthStore } from '@/stores/auth-store';
 
 /**
@@ -28,6 +30,8 @@ export function AuthBootstrap() {
         const user = await fetchMe();
         if (!cancelled) {
           setUser(user);
+          const lang = (user.preferredLanguage === 'ha' ? 'ha' : 'en') as AppLanguage;
+          await setAppLanguage(lang);
           setBootstrapStatus('ready');
         }
       } catch {

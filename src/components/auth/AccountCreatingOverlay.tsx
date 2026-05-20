@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 
 type AccountCreatingOverlayProps = {
@@ -8,11 +9,11 @@ type AccountCreatingOverlayProps = {
   subtitle?: string;
 };
 
-export function AccountCreatingOverlay({
-  open,
-  title = 'Creating your account',
-  subtitle = 'Securely setting things up — this only takes a moment.',
-}: AccountCreatingOverlayProps) {
+export function AccountCreatingOverlay({ open, title, subtitle }: AccountCreatingOverlayProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('auth.overlay.title');
+  const resolvedSubtitle = subtitle ?? t('auth.overlay.subtitle');
+
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -38,10 +39,10 @@ export function AccountCreatingOverlay({
           <Loader2 className="size-8 animate-spin text-sky-600" strokeWidth={2} aria-hidden />
         </div>
         <p id="account-creating-title" className="font-display text-lg font-medium tracking-tight text-brand-navy">
-          {title}
+          {resolvedTitle}
         </p>
         <p id="account-creating-desc" className="mt-2 text-[13px] leading-relaxed text-brand-body sm:text-sm">
-          {subtitle}
+          {resolvedSubtitle}
         </p>
       </div>
     </div>,
