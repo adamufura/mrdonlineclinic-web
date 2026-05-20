@@ -31,6 +31,23 @@ export async function uploadPractitionerPhoto(file: File): Promise<{ profilePhot
   return unwrapData(data, 'Upload failed');
 }
 
+/** POST /api/v1/practitioners/me/signature — PNG/JPG signature for prescriptions (field `file`). */
+export async function uploadPractitionerSignature(file: File): Promise<{ signatureUrl: string }> {
+  const form = new FormData();
+  form.append('file', file, file.name || 'signature.png');
+  const { data } = await api.post<ApiEnvelope<{ signatureUrl: string }>>('/practitioners/me/signature', form, {
+    transformRequest: [
+      (body, headers) => {
+        if (headers && typeof headers.delete === 'function') {
+          headers.delete('Content-Type');
+        }
+        return body;
+      },
+    ],
+  });
+  return unwrapData(data, 'Upload failed');
+}
+
 /** POST /api/v1/practitioners/me/credentials — license document (PDF or image). */
 export async function uploadPractitionerCredentials(file: File): Promise<{
   licenseDocumentUrl: string;

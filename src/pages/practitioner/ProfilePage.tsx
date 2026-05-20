@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Camera, ExternalLink, Loader2, Lock, Stethoscope, UserRound } from 'lucide-react';
+import { Camera, ExternalLink, Loader2, Lock, PenLine, Stethoscope, UserRound } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
@@ -18,6 +18,7 @@ import {
   getPractitionerMe,
   patchPractitionerProfile,
   uploadPractitionerPhoto,
+  uploadPractitionerSignature,
 } from '@/features/practitioners/session-api';
 import { listPublicSpecialties } from '@/features/specialties/api';
 import { normalizeAxiosError } from '@/lib/api/errors';
@@ -91,6 +92,7 @@ export default function PractitionerProfilePage() {
   const setUser = useAuthStore((s) => s.setUser);
   const setAccessToken = useAuthStore((s) => s.setAccessToken);
   const fileRef = useRef<HTMLInputElement>(null);
+  const signatureRef = useRef<HTMLInputElement>(null);
 
   const profile = useQuery({
     queryKey: ['practitioners', 'me'],
@@ -159,6 +161,15 @@ export default function PractitionerProfilePage() {
     onError: (e) => toast.error(normalizeAxiosError(e).message),
   });
 
+  const uploadSignature = useMutation({
+    mutationFn: (file: File) => uploadPractitionerSignature(file),
+    onSuccess: async () => {
+      toast.success('Signature saved — it will appear on prescription receipts');
+      await qc.invalidateQueries({ queryKey: ['practitioners', 'me'] });
+    },
+    onError: (e) => toast.error(normalizeAxiosError(e).message),
+  });
+
   const pwdForm = useForm<ChangePasswordValues>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
@@ -185,6 +196,8 @@ export default function PractitionerProfilePage() {
   const publicProfileHref = authUser?.id ? ROUTES.findDoctorProfile(authUser.id) : ROUTES.findDoctor;
 
   const selectedSpecialties = professionalForm.watch('specialtyIds');
+  const signatureUrl =
+    typeof profile.data?.signatureUrl === 'string' ? profile.data.signatureUrl : undefined;
 
   return (
     <>
@@ -446,6 +459,61 @@ export default function PractitionerProfilePage() {
                       <Field label="Country" htmlFor="country" error={professionalForm.formState.errors.practiceCountry?.message}>
                         <Input id="country" {...professionalForm.register('practiceCountry')} />
                       </Field>
+                    </div>
+                  </FormSection>
+
+                  <FormSection
+                    title="Prescription signature"
+                    description="Upload a clear signature on white background. It is printed on every prescription receipt you issue."
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                      <div className="flex h-24 min-w-[200px] items-center justify-center rounded-lg border border-dashed border-border bg-white px-4">
+                        {signatureUrl ? (
+                          <img
+                            src={signatureUrl}
+                            alt="Your signature"
+                            className="max-h-20 max-w-full object-contain"
+                          />
+                        ) : (
+                          <p className="text-center text-xs text-muted-foreground">No signature uploaded</p>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <input
+                          ref={signatureRef}
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            e.target.value = '';
+                            if (!f) return;
+                            if (!f.type.startsWith('image/')) {
+                              toast.error('Use a PNG or JPG image.');
+                              return;
+                            }
+                            if (f.size > 2 * 1024 * 1024) {
+                              toast.error('Signature image must be 2MB or smaller.');
+                              return;
+                            }
+                            uploadSignature.mutate(f);
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 bg-white"
+                          disabled={uploadSignature.isPending}
+                          onClick={() => signatureRef.current?.click()}
+                        >
+                          <PenLine className="h-4 w-4" aria-hidden />
+                          {uploadSignature.isPending ? 'Uploading…' : signatureUrl ? 'Replace signature' : 'Upload signature'}
+                        </Button>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          PNG with transparent or white background works best. Max 2MB.
+                        </p>
+                      </div>
                     </div>
                   </FormSection>
 
