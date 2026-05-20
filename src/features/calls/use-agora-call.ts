@@ -6,7 +6,7 @@ import AgoraRTC, {
 } from 'agora-rtc-sdk-ng';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { endCallApi, getCallToken, rejectCallApi, startCall } from './api';
+import { acceptCallApi, endCallApi, getCallToken, rejectCallApi, startCall } from './api';
 
 export type CallState = 'idle' | 'outgoing' | 'incoming' | 'active';
 
@@ -18,11 +18,22 @@ export type IncomingCallData = {
   channelName: string;
 };
 
+export type CallPeer = {
+  name: string;
+  photo?: string;
+};
+
 export function useAgoraCall() {
   const clientRef = useRef<IAgoraRTCClient | null>(null);
+  const localAudioRef = useRef<IMicrophoneAudioTrack | null>(null);
+  const localVideoRef = useRef<ICameraVideoTrack | null>(null);
+  const callStateRef = useRef<CallState>('idle');
+  const remoteCountRef = useRef(0);
+
   const [callState, setCallState] = useState<CallState>('idle');
   const [callType, setCallType] = useState<'audio' | 'video'>('video');
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
+  const [callPeer, setCallPeer] = useState<CallPeer | null>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
   const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
   const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
@@ -32,183 +43,23 @@ export function useAgoraCall() {
   const [incomingCall, setIncomingCall] = useState<IncomingCallData | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const outgoingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const callStartedAtRef = useRef<number | null>(null);
 
-  // Initialize client
-  const getClient = useCallback(() => {
-    if (!clientRef.current) {
-      clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-      clientRef.current.on('user-published', async (user, mediaType) => {
-        await clientRef.current!.subscribe(user, mediaType);
-        setRemoteUsers((prev) => {
-          const exists = prev.find((u) => u.uid === user.uid);
-          if (exists) return prev.map((u) => (u.uid === user.uid ? user : u));
-          return [...prev, user];
-        });
-        if (mediaType === 'audio') {
-          user.audioTrack?.play();
-        }
-      });
-      clientRef.current.on('user-unpublished', (user, mediaType) => {
-        if (mediaType === 'video') {
-          setRemoteUsers((prev) => prev.map((u) => (u.uid === user.uid ? user : u)));
-        }
-      });
-      clientRef.current.on('user-left', (user) => {
-        setRemoteUsers((prev) => prev.filter((u) => u.uid !== user.uid));
-      });
-    }
-    return clientRef.current;
+  callStateRef.current = callState;
+
+  const syncTrackState = useCallback(() => {
+    setLocalAudioTrack(localAudioRef.current);
+    setLocalVideoTrack(localVideoRef.current);
   }, []);
 
-  // Initiate a call
-  const initiateCall = useCallback(async (type: 'audio' | 'video', apptId: string) => {
-    try {
-      setCallType(type);
-      setAppointmentId(apptId);
-      setCallState('outgoing');
-
-      // Get token
-      const tokenData = await getCallToken(apptId, type);
-
-      // Notify other party
-      await startCall(apptId, type);
-
-      // Create tracks
-      const tracks: { audio?: IMicrophoneAudioTrack; video?: ICameraVideoTrack } = {};
-      tracks.audio = await AgoraRTC.createMicrophoneAudioTrack();
-      setLocalAudioTrack(tracks.audio);
-      if (type === 'video') {
-        tracks.video = await AgoraRTC.createCameraVideoTrack();
-        setLocalVideoTrack(tracks.video);
-      }
-
-      // Join channel
-      const client = getClient();
-      await client.join(tokenData.appId, tokenData.channelName, tokenData.token, tokenData.uid);
-
-      // Publish tracks
-      const publishTracks = [tracks.audio, tracks.video].filter(Boolean) as (IMicrophoneAudioTrack | ICameraVideoTrack)[];
-      await client.publish(publishTracks);
-
-      // Set active immediately (other party joins when they accept)
-      setCallState('active');
-      startDurationTimer();
-
-      // Auto-cancel after 30s if no one joins
-      outgoingTimeoutRef.current = setTimeout(() => {
-        if (remoteUsers.length === 0) {
-          toast.info('No answer');
-          void endCall();
-        }
-      }, 30000);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not start call');
-      await cleanup();
-      setCallState('idle');
+  const stopRemoteTracks = useCallback((users: IAgoraRTCRemoteUser[]) => {
+    for (const user of users) {
+      user.audioTrack?.stop();
+      user.videoTrack?.stop();
     }
-  }, [getClient]);
-
-  // Accept incoming call
-  const acceptCall = useCallback(async () => {
-    if (!incomingCall) return;
-    try {
-      const { appointmentId: apptId, callType: type } = incomingCall;
-      setCallType(type);
-      setAppointmentId(apptId);
-      setIncomingCall(null);
-
-      // Get token
-      const tokenData = await getCallToken(apptId, type);
-
-      // Create tracks
-      const tracks: { audio?: IMicrophoneAudioTrack; video?: ICameraVideoTrack } = {};
-      tracks.audio = await AgoraRTC.createMicrophoneAudioTrack();
-      setLocalAudioTrack(tracks.audio);
-      if (type === 'video') {
-        tracks.video = await AgoraRTC.createCameraVideoTrack();
-        setLocalVideoTrack(tracks.video);
-      }
-
-      // Join channel
-      const client = getClient();
-      await client.join(tokenData.appId, tokenData.channelName, tokenData.token, tokenData.uid);
-
-      // Publish
-      const publishTracks = [tracks.audio, tracks.video].filter(Boolean) as (IMicrophoneAudioTrack | ICameraVideoTrack)[];
-      await client.publish(publishTracks);
-
-      setCallState('active');
-      startDurationTimer();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not join call');
-      await cleanup();
-      setCallState('idle');
-    }
-  }, [incomingCall, getClient]);
-
-  // Reject incoming call
-  const rejectIncoming = useCallback(async () => {
-    if (!incomingCall) return;
-    try {
-      await rejectCallApi(incomingCall.appointmentId);
-    } catch { /* best effort */ }
-    setIncomingCall(null);
-    setCallState('idle');
-  }, [incomingCall]);
-
-  // End call
-  const endCall = useCallback(async () => {
-    if (outgoingTimeoutRef.current) {
-      clearTimeout(outgoingTimeoutRef.current);
-      outgoingTimeoutRef.current = null;
-    }
-    if (appointmentId) {
-      try { await endCallApi(appointmentId); } catch { /* best effort */ }
-    }
-    await cleanup();
-    setCallState('idle');
-  }, [appointmentId]);
-
-  // Toggle mute
-  const toggleMute = useCallback(async () => {
-    if (localAudioTrack) {
-      await localAudioTrack.setEnabled(isMuted);
-      setIsMuted(!isMuted);
-    }
-  }, [localAudioTrack, isMuted]);
-
-  // Toggle camera
-  const toggleCamera = useCallback(async () => {
-    if (localVideoTrack) {
-      await localVideoTrack.setEnabled(isCameraOff);
-      setIsCameraOff(!isCameraOff);
-    }
-  }, [localVideoTrack, isCameraOff]);
-
-  // Handle incoming call event (called from socket listener)
-  const handleIncomingCall = useCallback((data: IncomingCallData) => {
-    if (callState !== 'idle') return; // already in a call
-    setIncomingCall(data);
-    setCallState('incoming');
-  }, [callState]);
-
-  // Handle call ended by other party
-  const handleCallEnded = useCallback(async () => {
-    toast.info('Call ended');
-    await cleanup();
-    setCallState('idle');
-    setIncomingCall(null);
   }, []);
 
-  // Handle call rejected
-  const handleCallRejected = useCallback(async () => {
-    toast.info('Call declined');
-    await cleanup();
-    setCallState('idle');
-  }, []);
-
-  // Cleanup
-  async function cleanup() {
+  const cleanup = useCallback(async () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -217,46 +68,275 @@ export function useAgoraCall() {
       clearTimeout(outgoingTimeoutRef.current);
       outgoingTimeoutRef.current = null;
     }
-    if (localAudioTrack) {
-      localAudioTrack.stop();
-      localAudioTrack.close();
-      setLocalAudioTrack(null);
+
+    const client = clientRef.current;
+    const audio = localAudioRef.current;
+    const video = localVideoRef.current;
+    const remotes = [...remoteUsers];
+
+    stopRemoteTracks(remotes);
+
+    if (client) {
+      try {
+        await client.unpublish();
+      } catch {
+        /* channel may already be left */
+      }
+      try {
+        await client.leave();
+      } catch {
+        /* ignore */
+      }
+      client.removeAllListeners();
+      clientRef.current = null;
     }
-    if (localVideoTrack) {
-      localVideoTrack.stop();
-      localVideoTrack.close();
-      setLocalVideoTrack(null);
+
+    if (audio) {
+      audio.stop();
+      audio.close();
+      localAudioRef.current = null;
     }
-    if (clientRef.current) {
-      await clientRef.current.leave().catch(() => {});
+    if (video) {
+      video.stop();
+      video.close();
+      localVideoRef.current = null;
     }
+
+    syncTrackState();
     setRemoteUsers([]);
+    remoteCountRef.current = 0;
     setCallDuration(0);
     setIsMuted(false);
     setIsCameraOff(false);
     setAppointmentId(null);
-  }
+    setCallPeer(null);
+    setIncomingCall(null);
+    callStartedAtRef.current = null;
+  }, [remoteUsers, stopRemoteTracks, syncTrackState]);
 
-  function startDurationTimer() {
+  const startDurationTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    callStartedAtRef.current = Date.now();
     setCallDuration(0);
     timerRef.current = setInterval(() => {
-      setCallDuration((d) => d + 1);
+      if (callStartedAtRef.current) {
+        setCallDuration(Math.floor((Date.now() - callStartedAtRef.current) / 1000));
+      }
     }, 1000);
-  }
+  }, []);
 
-  // Cleanup on unmount
+  const activateCall = useCallback(() => {
+    if (callStateRef.current === 'active') return;
+    if (outgoingTimeoutRef.current) {
+      clearTimeout(outgoingTimeoutRef.current);
+      outgoingTimeoutRef.current = null;
+    }
+    setCallState('active');
+    startDurationTimer();
+  }, [startDurationTimer]);
+
+  const getClient = useCallback(() => {
+    if (!clientRef.current) {
+      const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+      clientRef.current = client;
+
+      client.on('user-published', async (user, mediaType) => {
+        await client.subscribe(user, mediaType);
+        setRemoteUsers((prev) => {
+          const exists = prev.find((u) => u.uid === user.uid);
+          const next = exists ? prev.map((u) => (u.uid === user.uid ? user : u)) : [...prev, user];
+          remoteCountRef.current = next.length;
+          return next;
+        });
+        if (mediaType === 'audio') {
+          user.audioTrack?.play();
+        }
+        if (callStateRef.current === 'outgoing' || callStateRef.current === 'incoming') {
+          activateCall();
+        }
+      });
+
+      client.on('user-unpublished', (user, mediaType) => {
+        if (mediaType === 'video') {
+          setRemoteUsers((prev) => prev.map((u) => (u.uid === user.uid ? user : u)));
+        }
+      });
+
+      client.on('user-left', (user) => {
+        setRemoteUsers((prev) => {
+          const next = prev.filter((u) => u.uid !== user.uid);
+          remoteCountRef.current = next.length;
+          return next;
+        });
+      });
+    }
+    return clientRef.current;
+  }, [activateCall]);
+
+  const joinChannel = useCallback(
+    async (type: 'audio' | 'video', apptId: string) => {
+      const tokenData = await getCallToken(apptId, type);
+      const audio = await AgoraRTC.createMicrophoneAudioTrack();
+      localAudioRef.current = audio;
+
+      let video: ICameraVideoTrack | null = null;
+      if (type === 'video') {
+        video = await AgoraRTC.createCameraVideoTrack();
+        localVideoRef.current = video;
+      }
+
+      syncTrackState();
+
+      const client = getClient();
+      await client.join(tokenData.appId, tokenData.channelName, tokenData.token, tokenData.uid);
+
+      const publishTracks = [audio, video].filter(Boolean) as (IMicrophoneAudioTrack | ICameraVideoTrack)[];
+      await client.publish(publishTracks);
+    },
+    [getClient, syncTrackState],
+  );
+
+  const endCall = useCallback(
+    async (outcome: 'completed' | 'rejected' | 'missed' | 'cancelled' = 'completed') => {
+      const apptId = appointmentId;
+      const type = callType;
+      const duration =
+        callStartedAtRef.current != null
+          ? Math.max(0, Math.floor((Date.now() - callStartedAtRef.current) / 1000))
+          : 0;
+
+      if (apptId) {
+        try {
+          await endCallApi({
+            appointmentId: apptId,
+            outcome,
+            durationSeconds: outcome === 'completed' ? duration : 0,
+            callType: type,
+          });
+        } catch {
+          /* best effort */
+        }
+      }
+
+      await cleanup();
+      setCallState('idle');
+    },
+    [appointmentId, callType, cleanup],
+  );
+
+  const initiateCall = useCallback(
+    async (type: 'audio' | 'video', apptId: string, peer?: CallPeer) => {
+      if (callStateRef.current !== 'idle') return;
+      try {
+        setCallType(type);
+        setAppointmentId(apptId);
+        setCallPeer(peer ?? null);
+        setCallState('outgoing');
+
+        await startCall(apptId, type);
+        await joinChannel(type, apptId);
+
+        outgoingTimeoutRef.current = setTimeout(() => {
+          if (callStateRef.current === 'outgoing' && remoteCountRef.current === 0) {
+            toast.info('No answer');
+            void endCall('missed');
+          }
+        }, 30000);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Could not start call');
+        await cleanup();
+        setCallState('idle');
+      }
+    },
+    [joinChannel, cleanup, endCall],
+  );
+
+  const acceptCall = useCallback(async () => {
+    if (!incomingCall) return;
+    try {
+      const { appointmentId: apptId, callType: type, callerName, callerPhoto } = incomingCall;
+      setCallType(type);
+      setAppointmentId(apptId);
+      setCallPeer({ name: callerName, photo: callerPhoto });
+      setIncomingCall(null);
+      setCallState('incoming');
+
+      await acceptCallApi(apptId);
+      await joinChannel(type, apptId);
+      activateCall();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not join call');
+      await cleanup();
+      setCallState('idle');
+    }
+  }, [incomingCall, joinChannel, activateCall, cleanup]);
+
+  const rejectIncoming = useCallback(async () => {
+    if (!incomingCall) return;
+    const { appointmentId: apptId, callType: type } = incomingCall;
+    try {
+      await rejectCallApi(apptId, type);
+    } catch {
+      /* best effort */
+    }
+    await cleanup();
+    setCallState('idle');
+  }, [incomingCall, cleanup]);
+
+  const toggleMute = useCallback(async () => {
+    const audio = localAudioRef.current;
+    if (audio) {
+      await audio.setEnabled(isMuted);
+      setIsMuted(!isMuted);
+    }
+  }, [isMuted]);
+
+  const toggleCamera = useCallback(async () => {
+    const video = localVideoRef.current;
+    if (video) {
+      await video.setEnabled(isCameraOff);
+      setIsCameraOff(!isCameraOff);
+    }
+  }, [isCameraOff]);
+
+  const handleIncomingCall = useCallback((data: IncomingCallData) => {
+    if (callStateRef.current !== 'idle') return;
+    setIncomingCall(data);
+    setCallPeer({ name: data.callerName, photo: data.callerPhoto });
+    setCallState('incoming');
+  }, []);
+
+  const handleCallEnded = useCallback(async () => {
+    if (callStateRef.current === 'idle') return;
+    toast.info('Call ended');
+    await cleanup();
+    setCallState('idle');
+  }, [cleanup]);
+
+  const handleCallRejected = useCallback(async () => {
+    if (callStateRef.current !== 'outgoing') return;
+    toast.info('Call declined');
+    await cleanup();
+    setCallState('idle');
+  }, [cleanup]);
+
+  const handleCallAccepted = useCallback(() => {
+    if (callStateRef.current === 'outgoing') {
+      activateCall();
+    }
+  }, [activateCall]);
+
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (outgoingTimeoutRef.current) clearTimeout(outgoingTimeoutRef.current);
       void cleanup();
     };
-  }, []);
+  }, [cleanup]);
 
   return {
     callState,
     callType,
     appointmentId,
+    callPeer,
     localAudioTrack,
     localVideoTrack,
     remoteUsers,
@@ -273,5 +353,6 @@ export function useAgoraCall() {
     handleIncomingCall,
     handleCallEnded,
     handleCallRejected,
+    handleCallAccepted,
   };
 }

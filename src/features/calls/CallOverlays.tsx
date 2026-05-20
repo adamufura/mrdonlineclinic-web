@@ -60,6 +60,18 @@ export function IncomingCallOverlay({
   onAccept: () => void;
   onReject: () => void;
 }) {
+  useEffect(() => {
+    const audio = new Audio(
+      'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77+efTRAMUKfj8LZjHAY4kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUrgc7y2Yk2CBlou+/nn00QDFCn4/C2YxwGOJHX8sx5LAUkd8fw3ZBAC',
+    );
+    audio.loop = true;
+    void audio.play().catch(() => {});
+    return () => {
+      audio.pause();
+      audio.src = '';
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-gradient-to-b from-[#0a1628] to-[#0d3a6e] text-white">
       <div className="flex flex-col items-center gap-6">
@@ -121,14 +133,11 @@ export function ActiveCallOverlay({
   const localVideoRef = useRef<HTMLDivElement>(null);
   const remoteVideoRef = useRef<HTMLDivElement>(null);
 
-  // Play local video
+  // Play local video (tracks are closed in useAgoraCall.cleanup — do not stop here)
   useEffect(() => {
     if (localVideoTrack && localVideoRef.current && callType === 'video' && !isCameraOff) {
       localVideoTrack.play(localVideoRef.current);
     }
-    return () => {
-      localVideoTrack?.stop();
-    };
   }, [localVideoTrack, isCameraOff, callType]);
 
   // Play remote video

@@ -29,6 +29,7 @@ import { logout } from '@/features/auth/api';
 import { PractitionerSlotManagerProvider, usePractitionerSlotManager } from '@/features/practitioners/practitioner-slot-manager';
 import { getPractitionerMe, listPractitionerAppointments } from '@/features/practitioners/session-api';
 import { cn } from '@/lib/utils/cn';
+import { CallProvider } from '@/providers/call-provider';
 import { ROUTES } from '@/router/routes';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -487,8 +488,10 @@ function PractitionerLayoutInner() {
 
 export function PractitionerLayout() {
   return (
-    <PractitionerSlotManagerProvider>
-      <PractitionerLayoutInner />
-    </PractitionerSlotManagerProvider>
+    <CallProvider>
+      <PractitionerSlotManagerProvider>
+        <PractitionerLayoutInner />
+      </PractitionerSlotManagerProvider>
+    </CallProvider>
   );
 }

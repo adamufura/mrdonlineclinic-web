@@ -9,6 +9,9 @@ import {
   Mic,
   Pause,
   Phone,
+  PhoneIncoming,
+  PhoneMissed,
+  PhoneOff,
   Play,
   Search,
   Send,
@@ -25,8 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getChatRoom, listChatMessages, listChatRooms, markChatRoomReadAll as markRoomReadApi, postChatMessage, uploadChatFile } from '@/features/chat/api';
 import { useChatSocket } from '@/features/chat/use-chat-socket';
-import { useAgoraCall } from '@/features/calls/use-agora-call';
-import { ActiveCallOverlay, IncomingCallOverlay, OutgoingCallOverlay } from '@/features/calls/CallOverlays';
+import { useCallContext } from '@/providers/call-provider';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -104,8 +106,7 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
 
   useChatSocket(roomId, token, myId, Boolean(roomId && token));
 
-  // ─── Agora Calls ───
-  const agoraCall = useAgoraCall();
+  const agoraCall = useCallContext();
 
   const lastMarkedRoom = useRef<string | null>(null);
 
@@ -206,36 +207,6 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
         <title>{title} — MRD Online Clinic</title>
         <meta name="robots" content="noindex" />
       </Helmet>
-
-      {/* Call Overlays */}
-      {agoraCall.callState === 'outgoing' ? (
-        <OutgoingCallOverlay
-          calleeName={displayName(other)}
-          callType={agoraCall.callType}
-          onEnd={() => void agoraCall.endCall()}
-        />
-      ) : null}
-      {agoraCall.callState === 'incoming' && agoraCall.incomingCall ? (
-        <IncomingCallOverlay
-          data={agoraCall.incomingCall}
-          onAccept={() => void agoraCall.acceptCall()}
-          onReject={() => void agoraCall.rejectIncoming()}
-        />
-      ) : null}
-      {agoraCall.callState === 'active' ? (
-        <ActiveCallOverlay
-          callType={agoraCall.callType}
-          otherName={displayName(other)}
-          duration={agoraCall.callDuration}
-          isMuted={agoraCall.isMuted}
-          isCameraOff={agoraCall.isCameraOff}
-          localVideoTrack={agoraCall.localVideoTrack}
-          remoteUsers={agoraCall.remoteUsers}
-          onToggleMute={() => void agoraCall.toggleMute()}
-          onToggleCamera={() => void agoraCall.toggleCamera()}
-          onEnd={() => void agoraCall.endCall()}
-        />
-      ) : null}
 
       <div className="flex h-[calc(100dvh-120px)] min-h-[440px] flex-col overflow-hidden rounded-[20px] border border-[#e2e8f0] bg-[#f8fafc] shadow-[0_8px_40px_rgba(15,23,42,0.06)] md:h-[calc(100dvh-132px)]">
         <div className="flex min-h-0 flex-1 divide-x divide-[#e2e8f0]">
@@ -423,7 +394,13 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                       className="h-11 w-11 shrink-0 text-[#0a1628] hover:bg-sky-50 hover:text-sky-700 disabled:opacity-40"
                       aria-label="Voice call"
                       disabled={!canCall || agoraCall.callState !== 'idle'}
-                      onClick={() => activeApptId && agoraCall.initiateCall('audio', activeApptId)}
+                      onClick={() =>
+                        activeApptId &&
+                        agoraCall.initiateCall('audio', activeApptId, {
+                          name: displayName(other),
+                          photo: profilePhotoFrom(other) ?? undefined,
+                        })
+                      }
                     >
                       <Phone className="h-9 w-9" strokeWidth={1.8} />
                     </Button>
@@ -434,7 +411,13 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                       className="h-11 w-11 shrink-0 text-[#0a1628] hover:bg-sky-50 hover:text-sky-700 disabled:opacity-40"
                       aria-label="Video call"
                       disabled={!canCall || agoraCall.callState !== 'idle'}
-                      onClick={() => activeApptId && agoraCall.initiateCall('video', activeApptId)}
+                      onClick={() =>
+                        activeApptId &&
+                        agoraCall.initiateCall('video', activeApptId, {
+                          name: displayName(other),
+                          photo: profilePhotoFrom(other) ?? undefined,
+                        })
+                      }
                     >
                       <Video className="h-9 w-9" strokeWidth={1.8} />
                     </Button>
@@ -489,8 +472,22 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                               <VoiceNoteBubble attachment={attachments[0]} mine={mine} />
                             ) : null}
 
+                            {/* Call log */}
+                            {msgType === 'CALL' ? (
+                              <CallLogBubble
+                                content={body}
+                                mine={mine}
+                                senderName={displayName(
+                                  isRecord(m.sender) ? (m.sender as Record<string, unknown>) : null,
+                                )}
+                              />
+                            ) : null}
+
                             {/* Text message */}
-                            {msgType === 'TEXT' || (msgType !== 'IMAGE' && msgType !== 'VOICE') ? (
+                            {msgType === 'TEXT' ? (
+                              <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">{body}</p>
+                            ) : null}
+                            {msgType !== 'TEXT' && msgType !== 'IMAGE' && msgType !== 'VOICE' && msgType !== 'CALL' ? (
                               <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">{body}</p>
                             ) : null}
 
@@ -585,6 +582,45 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
         </div>
       </div>
     </>
+  );
+}
+
+/* ─── Call log bubble (WhatsApp-style) ─── */
+function CallLogBubble({
+  content,
+  mine,
+  senderName,
+}: {
+  content: string;
+  mine: boolean;
+  senderName: string;
+}) {
+  const lower = content.toLowerCase();
+  const isMissed = lower.includes('missed');
+  const isDeclined = lower.includes('declined');
+  const isCancelled = lower.includes('cancelled');
+  const isVideo = lower.includes('video');
+
+  const Icon = isMissed || isDeclined ? PhoneMissed : isCancelled ? PhoneOff : isVideo ? Video : PhoneIncoming;
+
+  return (
+    <div className="flex items-center gap-2.5 py-0.5">
+      <Icon
+        className={cn(
+          'h-4 w-4 shrink-0',
+          mine ? 'text-sky-100' : isMissed || isDeclined ? 'text-rose-500' : 'text-[#64748b]',
+        )}
+        strokeWidth={2}
+      />
+      <div className="min-w-0">
+        <p className={cn('text-[13px] font-medium leading-snug', mine ? 'text-white' : 'text-[#0a1628]')}>
+          {content}
+        </p>
+        {!mine && senderName ? (
+          <p className={cn('text-[11px]', mine ? 'text-sky-100/80' : 'text-[#94a3b8]')}>{senderName}</p>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

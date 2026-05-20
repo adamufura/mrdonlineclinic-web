@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { logout } from '@/features/auth/api';
 import { getPatientMe } from '@/features/patients/api';
 import { cn } from '@/lib/utils/cn';
+import { CallProvider } from '@/providers/call-provider';
 import { ROUTES } from '@/router/routes';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -205,6 +206,7 @@ export function PatientLayout() {
     'relative flex h-dvh w-[260px] shrink-0 flex-col gap-2 overflow-y-auto bg-gradient-to-b from-[#04132a] to-[#0a2545] px-[18px] pb-6 pt-6 before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_60%_30%_at_50%_0%,rgba(56,189,248,0.15),transparent_70%),radial-gradient(ellipse_50%_30%_at_50%_100%,rgba(94,234,212,0.1),transparent_70%)]';
 
   return (
+    <CallProvider>
     <div className="relative h-dvh overflow-hidden bg-[#f7f8fb] text-foreground">
       {/* Desktop sidebar — fixed */}
       <aside className={cn(sidebarClass, 'fixed left-0 top-0 z-40 hidden lg:flex')}>
@@ -337,5 +339,6 @@ export function PatientLayout() {
         onConfirm={performLogout}
       />
     </div>
+    </CallProvider>
   );
 }
