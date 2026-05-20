@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, CameraOff, Mic, MicOff, Phone, PhoneOff, Video } from 'lucide-react';
 import type { IAgoraRTCRemoteUser, ICameraVideoTrack } from 'agora-rtc-sdk-ng';
 import { cn } from '@/lib/utils/cn';
-import type { IncomingCallData } from './use-agora-call';
+import { startRingtone, stopRingtone } from './ringtone';
+import { RING_TIMEOUT_MS, type IncomingCallData } from './use-agora-call';
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -22,18 +23,38 @@ export function OutgoingCallOverlay({
   callType: 'audio' | 'video';
   onEnd: () => void;
 }) {
+  const [ringSeconds, setRingSeconds] = useState(0);
+
+  useEffect(() => {
+    startRingtone();
+    const started = Date.now();
+    const tick = setInterval(() => {
+      setRingSeconds(Math.min(RING_TIMEOUT_MS / 1000, Math.floor((Date.now() - started) / 1000)));
+    }, 500);
+    return () => {
+      clearInterval(tick);
+      stopRingtone();
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-gradient-to-b from-[#0a1628] to-[#0d3a6e] text-white">
       <div className="flex flex-col items-center gap-6">
-        <div className="h-24 w-24 rounded-full bg-gradient-to-br from-sky-400 to-teal-400 grid place-items-center text-3xl font-bold text-[#04132a]">
-          {calleeName.charAt(0).toUpperCase()}
+        <div className="relative">
+          <div className="absolute inset-0 animate-ping rounded-full bg-sky-400/30" />
+          <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-sky-400 to-teal-400 grid place-items-center text-3xl font-bold text-[#04132a]">
+            {calleeName.charAt(0).toUpperCase()}
+          </div>
         </div>
         <div className="text-center">
           <p className="text-2xl font-medium">{calleeName}</p>
-          <p className="mt-2 flex items-center gap-2 text-sm text-white/60">
+          <p className="mt-2 flex items-center justify-center gap-2 text-sm text-white/60">
             {callType === 'video' ? <Video className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
-            <span>Calling</span>
+            <span>Ringing</span>
             <span className="animate-pulse">•••</span>
+          </p>
+          <p className="mt-1 text-xs tabular-nums text-white/40">
+            {ringSeconds}s / {RING_TIMEOUT_MS / 1000}s
           </p>
         </div>
       </div>
@@ -61,15 +82,8 @@ export function IncomingCallOverlay({
   onReject: () => void;
 }) {
   useEffect(() => {
-    const audio = new Audio(
-      'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77+efTRAMUKfj8LZjHAY4kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUrgc7y2Yk2CBlou+/nn00QDFCn4/C2YxwGOJHX8sx5LAUkd8fw3ZBAC',
-    );
-    audio.loop = true;
-    void audio.play().catch(() => {});
-    return () => {
-      audio.pause();
-      audio.src = '';
-    };
+    startRingtone();
+    return () => stopRingtone();
   }, []);
 
   return (
@@ -115,6 +129,7 @@ export function ActiveCallOverlay({
   isCameraOff,
   localVideoTrack,
   remoteUsers,
+  waitingLabel = 'Waiting for other party…',
   onToggleMute,
   onToggleCamera,
   onEnd,
@@ -126,6 +141,7 @@ export function ActiveCallOverlay({
   isCameraOff: boolean;
   localVideoTrack: ICameraVideoTrack | null;
   remoteUsers: IAgoraRTCRemoteUser[];
+  waitingLabel?: string;
   onToggleMute: () => void;
   onToggleCamera: () => void;
   onEnd: () => void;
@@ -135,8 +151,13 @@ export function ActiveCallOverlay({
 
   // Play local video (tracks are closed in useAgoraCall.cleanup — do not stop here)
   useEffect(() => {
-    if (localVideoTrack && localVideoRef.current && callType === 'video' && !isCameraOff) {
-      localVideoTrack.play(localVideoRef.current);
+    if (!localVideoTrack || callType !== 'video' || isCameraOff) return;
+    const el = localVideoRef.current;
+    if (!el) return;
+    try {
+      localVideoTrack.play(el);
+    } catch (e) {
+      console.warn('[Agora] local play failed', e);
     }
   }, [localVideoTrack, isCameraOff, callType]);
 
@@ -155,7 +176,7 @@ export function ActiveCallOverlay({
         <div ref={remoteVideoRef} className="flex-1 bg-[#0a1628]">
           {remoteUsers.length === 0 ? (
             <div className="flex h-full items-center justify-center text-white/50">
-              Waiting for other party…
+              {waitingLabel}
             </div>
           ) : null}
         </div>

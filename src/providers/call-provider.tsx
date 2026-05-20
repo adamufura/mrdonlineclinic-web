@@ -55,6 +55,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
       {agora.callState === 'active' ? (
         <ActiveCallOverlay
+          waitingLabel={
+            agora.remoteUsers.length === 0 ? 'Connecting…' : 'Waiting for other party…'
+          }
           callType={agora.callType}
           otherName={peerName}
           duration={agora.callDuration}

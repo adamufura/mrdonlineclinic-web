@@ -394,13 +394,13 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                       className="h-11 w-11 shrink-0 text-[#0a1628] hover:bg-sky-50 hover:text-sky-700 disabled:opacity-40"
                       aria-label="Voice call"
                       disabled={!canCall || agoraCall.callState !== 'idle'}
-                      onClick={() =>
-                        activeApptId &&
-                        agoraCall.initiateCall('audio', activeApptId, {
+                      onClick={() => {
+                        if (!activeApptId || agoraCall.callState !== 'idle') return;
+                        void agoraCall.initiateCall('audio', activeApptId, {
                           name: displayName(other),
                           photo: profilePhotoFrom(other) ?? undefined,
-                        })
-                      }
+                        });
+                      }}
                     >
                       <Phone className="h-9 w-9" strokeWidth={1.8} />
                     </Button>
@@ -411,13 +411,13 @@ export function MessagingWorkspace({ messagesBasePath, appointmentDetailPath }: 
                       className="h-11 w-11 shrink-0 text-[#0a1628] hover:bg-sky-50 hover:text-sky-700 disabled:opacity-40"
                       aria-label="Video call"
                       disabled={!canCall || agoraCall.callState !== 'idle'}
-                      onClick={() =>
-                        activeApptId &&
-                        agoraCall.initiateCall('video', activeApptId, {
+                      onClick={() => {
+                        if (!activeApptId || agoraCall.callState !== 'idle') return;
+                        void agoraCall.initiateCall('video', activeApptId, {
                           name: displayName(other),
                           photo: profilePhotoFrom(other) ?? undefined,
-                        })
-                      }
+                        });
+                      }}
                     >
                       <Video className="h-9 w-9" strokeWidth={1.8} />
                     </Button>
