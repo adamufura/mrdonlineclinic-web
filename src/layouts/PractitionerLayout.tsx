@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Award,
   Bell,
@@ -12,7 +12,6 @@ import {
   MessageSquare,
   MoreHorizontal,
   Plus,
-  Search,
   ShieldCheck,
   UserCircle,
   Users,
@@ -26,7 +25,6 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { HeaderProfileMenu } from '@/components/shared/header-profile-menu';
 import { UserAvatar } from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { logout } from '@/features/auth/api';
 import { PractitionerSlotManagerProvider, usePractitionerSlotManager } from '@/features/practitioners/practitioner-slot-manager';
 import { getPractitionerMe, listPractitionerAppointments } from '@/features/practitioners/session-api';
@@ -237,8 +235,6 @@ function PractitionerLayoutInner() {
   const clearSession = useAuthStore((s) => s.clearSession);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
-
   const profile = useQuery({
     queryKey: ['practitioners', 'me'],
     queryFn: getPractitionerMe,
@@ -291,17 +287,6 @@ function PractitionerLayoutInner() {
       document.body.style.overflow = prev;
     };
   }, [mobileOpen]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
 
   const pendingAppointments = pendingCount.data ?? 0;
 
@@ -367,19 +352,6 @@ function PractitionerLayoutInner() {
           >
             <Menu className="h-5 w-5" />
           </Button>
-
-          <div className="relative min-w-0 flex-1 max-lg:max-w-none lg:max-w-[460px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-muted-foreground" />
-            <Input
-              ref={searchRef}
-              type="search"
-              placeholder={t('layout.searchPlaceholder')}
-              className="h-9 border-[#e2e8f0] bg-[#eef1f6] pl-9 pr-14 text-[13px] shadow-none focus-visible:border-teal-500 focus-visible:bg-white focus-visible:ring-teal-500/20"
-            />
-            <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-[#e2e8f0] bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline-block">
-              ⌘K
-            </kbd>
-          </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <LanguageSwitcher />

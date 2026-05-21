@@ -1,7 +1,21 @@
-import { type FormEvent, useState } from 'react';
-import { Lock, Mail, MapPin, Phone, User } from 'lucide-react';
+import { type FormEvent, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  ChevronRight,
+  HeartPulse,
+  Home,
+  Lock,
+  Mail,
+  MapPin,
+  Menu,
+  Phone,
+  Pill,
+  Stethoscope,
+  User,
+  X,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { toast } from 'sonner';
 import { BrandMark } from '@/components/brand/BrandMark';
@@ -9,6 +23,7 @@ import { MarketingFooterSocial } from '@/components/marketing/MarketingFooterSoc
 import { MarketingLocationMap } from '@/components/marketing/MarketingLocationMap';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/router/routes';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -59,35 +74,261 @@ function Logo() {
       aria-label="MRD Online Clinic — home"
     >
       <BrandMark size="xl" variant="transparent" />
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-0.5 leading-none">
-        <span className="text-lg font-bold tracking-tight text-brand-hero-blue sm:text-xl">MRD</span>
-        <span className="text-lg font-bold tracking-tight text-brand-navy sm:text-xl">Online</span>
-        <span className="text-lg font-bold tracking-tight text-brand-navy sm:text-xl">Clinic</span>
+      <div className="flex min-w-0 items-baseline gap-x-0.5 whitespace-nowrap leading-none">
+        <span className="text-base font-bold tracking-tight text-brand-hero-blue sm:text-lg lg:text-xl">MRD</span>
+        <span className="text-base font-bold tracking-tight text-brand-navy sm:text-lg lg:text-xl">Online</span>
+        <span className="text-base font-bold tracking-tight text-brand-navy sm:text-lg lg:text-xl">Clinic</span>
       </div>
     </Link>
+  );
+}
+
+function AuthActions({
+  user,
+  compact,
+  onNavigate,
+}: {
+  user: ReturnType<typeof useAuthStore.getState>['user'];
+  compact?: boolean;
+  onNavigate?: () => void;
+}) {
+  const { t } = useTranslation();
+
+  if (user?.role === 'PATIENT') {
+    if (compact) {
+      return (
+        <Link
+          to={ROUTES.patient.dashboard}
+          onClick={onNavigate}
+          className="flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 text-[14px] font-semibold text-white shadow-[0_6px_18px_rgba(14,165,233,0.35)] transition hover:brightness-105 active:scale-[0.99]"
+        >
+          {t('marketing.nav.patientHub')}
+        </Link>
+      );
+    }
+    return (
+      <Button asChild size="default" className="lg:w-auto">
+        <Link to={ROUTES.patient.dashboard} onClick={onNavigate}>
+          {t('marketing.nav.patientHub')}
+        </Link>
+      </Button>
+    );
+  }
+  if (user?.role === 'PRACTITIONER') {
+    if (compact) {
+      return (
+        <Link
+          to={ROUTES.practitioner.dashboard}
+          onClick={onNavigate}
+          className="flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-[14px] font-semibold text-white shadow-[0_6px_18px_rgba(20,184,166,0.35)] transition hover:brightness-105 active:scale-[0.99]"
+        >
+          {t('marketing.nav.practitionerHub')}
+        </Link>
+      );
+    }
+    return (
+      <Button asChild size="default" className="lg:w-auto">
+        <Link to={ROUTES.practitioner.dashboard} onClick={onNavigate}>
+          {t('marketing.nav.practitionerHub')}
+        </Link>
+      </Button>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="flex w-full flex-col gap-2.5">
+        <Link
+          to={ROUTES.register}
+          onClick={onNavigate}
+          className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-brand-navy/10 bg-brand-navy text-[14px] font-semibold text-white shadow-[0_6px_18px_rgba(4,19,42,0.2)] transition hover:brightness-110 active:scale-[0.99]"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
+            <User className="size-4 shrink-0" aria-hidden />
+          </span>
+          {t('marketing.nav.register')}
+        </Link>
+        <Link
+          to={ROUTES.login}
+          onClick={onNavigate}
+          className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 text-[14px] font-semibold text-white shadow-[0_6px_18px_rgba(14,165,233,0.35)] transition hover:brightness-105 active:scale-[0.99]"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
+            <Lock className="size-4 shrink-0" aria-hidden />
+          </span>
+          {t('marketing.nav.logIn')}
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 sm:gap-3">
+      <Button variant="navNavy" size="sm" className="gap-2" asChild>
+        <Link to={ROUTES.register} onClick={onNavigate}>
+          <User className="size-4" />
+          {t('marketing.nav.register')}
+        </Link>
+      </Button>
+      <Button variant="navCyan" size="sm" className="gap-2" asChild>
+        <Link to={ROUTES.login} onClick={onNavigate}>
+          <Lock className="size-4" />
+          {t('marketing.nav.logIn')}
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+type MobileNavItem = {
+  to: string;
+  label: string;
+  icon: typeof Home;
+};
+
+function isMobileNavActive(to: string, pathname: string, hash: string): boolean {
+  if (to.includes('#')) {
+    const [path, fragment] = to.split('#');
+    const base = path || '/';
+    return pathname === base && hash === `#${fragment}`;
+  }
+  if (to === ROUTES.home) return pathname === '/' && !hash;
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
+function MarketingMobileMenu({
+  open,
+  onClose,
+  navItems,
+  user,
+}: {
+  open: boolean;
+  onClose: () => void;
+  navItems: MobileNavItem[];
+  user: ReturnType<typeof useAuthStore.getState>['user'];
+}) {
+  const { t } = useTranslation();
+  const { pathname, hash } = useLocation();
+
+  if (!open || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[200] lg:hidden" role="dialog" aria-modal="true" id="marketing-mobile-menu">
+      <button
+        type="button"
+        className="absolute inset-0 bg-brand-navy/55 backdrop-blur-[3px] transition-opacity"
+        aria-label="Close menu"
+        onClick={onClose}
+      />
+      <div className="absolute inset-y-0 right-0 flex w-[min(100vw,20.5rem)] flex-col bg-gradient-to-b from-white via-white to-[#f0f7fc] shadow-[-12px_0_40px_rgba(4,19,42,0.12)] sm:w-[22rem]">
+        <div className="relative shrink-0 overflow-hidden border-b border-brand-stroke-soft/70 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
+          <div
+            className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-hero-blue via-sky-400 to-teal-400"
+            aria-hidden
+          />
+          <div className="flex items-center gap-3">
+            <BrandMark size="md" variant="transparent" className="shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-hero-blue">
+                MRD Online Clinic
+              </p>
+              <p className="truncate text-lg font-bold tracking-tight text-brand-navy">{t('marketing.nav.menu')}</p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-stroke-soft bg-white text-brand-navy shadow-sm transition hover:border-sky-200 hover:bg-sky-50"
+              aria-label="Close menu"
+              onClick={onClose}
+            >
+              <X className="size-5" strokeWidth={2.25} />
+            </button>
+          </div>
+        </div>
+
+        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4" aria-label="Mobile">
+          <p className="px-3 pb-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-body/55">
+            {t('marketing.nav.explore')}
+          </p>
+          <ul className="flex flex-col gap-1">
+            {navItems.map(({ to, label, icon: Icon }) => {
+              const active = isMobileNavActive(to, pathname, hash);
+              return (
+                <li key={to}>
+                  <Link
+                    to={to}
+                    onClick={onClose}
+                    className={cn(
+                      'group flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200',
+                      active
+                        ? 'bg-gradient-to-r from-sky-50 to-teal-50/90 text-brand-hero-blue ring-1 ring-sky-200/70 shadow-sm'
+                        : 'text-brand-navy hover:bg-white/90 hover:shadow-sm hover:ring-1 hover:ring-brand-stroke-soft/80',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors',
+                        active
+                          ? 'bg-white text-brand-hero-blue shadow-sm'
+                          : 'bg-[#eef5f9] text-brand-navy/65 group-hover:bg-white group-hover:text-brand-hero-blue',
+                      )}
+                    >
+                      <Icon className="size-[18px]" strokeWidth={2} aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1 text-[15px] font-semibold leading-tight">{label}</span>
+                    <ChevronRight
+                      className={cn(
+                        'size-4 shrink-0 transition-all',
+                        active ? 'text-brand-hero-blue opacity-100' : 'text-brand-body/30 opacity-0 group-hover:opacity-60',
+                      )}
+                      strokeWidth={2.25}
+                      aria-hidden
+                    />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <div className="shrink-0 space-y-4 border-t border-brand-stroke-soft/80 bg-white/90 px-4 py-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] backdrop-blur-sm">
+          <div className="flex justify-center">
+            <LanguageSwitcher className="h-10 w-full max-w-[12rem] justify-center rounded-xl border-brand-stroke-soft/90 py-2.5 text-[13px]" />
+          </div>
+          {!user ? (
+            <p className="text-center text-[12px] font-medium text-brand-body/80">{t('marketing.nav.getStarted')}</p>
+          ) : null}
+          <AuthActions user={user} compact onNavigate={onClose} />
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
 export function MarketingLayout() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const hashLinks = (
-    <>
-      <Link className={navLinkClass} to={ROUTES.home}>
-        {t('marketing.nav.home')}
-      </Link>
-      <Link className={navLinkClass} to={ROUTES.findDoctor}>
-        {t('marketing.nav.practitioners')}
-      </Link>
-      <Link className={navLinkClass} to={`${ROUTES.home}#patients`}>
-        {t('marketing.nav.patients')}
-      </Link>
-      <Link className={navLinkClass} to={`${ROUTES.home}#pharmacy`}>
-        {t('marketing.nav.pharmacy')}
-      </Link>
-    </>
-  );
+  const navItems: MobileNavItem[] = [
+    { to: ROUTES.home, label: t('marketing.nav.home'), icon: Home },
+    { to: ROUTES.findDoctor, label: t('marketing.nav.practitioners'), icon: Stethoscope },
+    { to: `${ROUTES.home}#patients`, label: t('marketing.nav.patients'), icon: HeartPulse },
+    { to: `${ROUTES.home}#pharmacy`, label: t('marketing.nav.pharmacy'), icon: Pill },
+  ];
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [user?.id]);
 
   const companyLinks = [
     { label: t('marketing.footer.home'), to: ROUTES.home },
@@ -104,51 +345,57 @@ export function MarketingLayout() {
   return (
     <div className="flex min-h-dvh flex-col bg-brand-marketing font-sans text-brand-navy">
       <header className="sticky top-0 z-50 border-b border-brand-stroke-soft bg-white/95 backdrop-blur-md">
-        <div className="mx-auto grid w-full max-w-site grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 px-4 py-4 sm:px-6 lg:grid-cols-[auto_1fr_auto] lg:gap-x-6 lg:px-8">
-          <div className="min-w-0">
+        <div className="mx-auto flex w-full max-w-site items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:gap-6 lg:px-8 lg:py-4">
+          <div className="min-w-0 shrink">
             <Logo />
           </div>
-          <nav className="hidden items-center justify-center gap-x-7 lg:flex xl:gap-x-9">{hashLinks}</nav>
-          <div className="flex items-center justify-end gap-2 sm:gap-3">
+
+          <nav className="hidden items-center justify-center gap-x-7 lg:flex xl:gap-x-9" aria-label="Main">
+            {navItems.map(({ to, label }) => (
+              <Link key={to} className={navLinkClass} to={to}>
+                {label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
             <LanguageSwitcher />
-            {user?.role === 'PATIENT' ? (
-              <Button asChild size="sm">
-                <Link to={ROUTES.patient.dashboard}>{t('marketing.nav.patientHub')}</Link>
-              </Button>
-            ) : user?.role === 'PRACTITIONER' ? (
-              <Button asChild size="sm">
-                <Link to={ROUTES.practitioner.dashboard}>{t('marketing.nav.practitionerHub')}</Link>
-              </Button>
-            ) : (
-              <>
-                <Button variant="navNavy" size="sm" className="hidden gap-2 sm:inline-flex lg:gap-2" asChild>
-                  <Link to={ROUTES.register}>
-                    <User className="size-4" />
-                    {t('marketing.nav.register')}
-                  </Link>
-                </Button>
-                <Button variant="navCyan" size="sm" className="gap-2 lg:gap-2" asChild>
+            <div className="hidden lg:block">
+              <AuthActions user={user} />
+            </div>
+            <div className="hidden sm:block lg:hidden">
+              {!user ? (
+                <Button variant="navCyan" size="sm" className="gap-2" asChild>
                   <Link to={ROUTES.login}>
                     <Lock className="size-4" />
                     {t('marketing.nav.logIn')}
                   </Link>
                 </Button>
-              </>
-            )}
+              ) : (
+                <AuthActions user={user} />
+              )}
+            </div>
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-brand-navy transition-colors hover:bg-brand-stroke-soft/60 lg:hidden"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="marketing-mobile-menu"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMobileMenuOpen((o) => !o)}
+            >
+              {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+            </button>
           </div>
         </div>
-        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-brand-stroke-soft px-4 py-3 lg:hidden">
-          {hashLinks}
-          {!user ? (
-            <Button variant="navNavy" size="sm" className="gap-2 sm:hidden" asChild>
-              <Link to={ROUTES.register}>
-                <User className="size-4" />
-                {t('marketing.nav.register')}
-              </Link>
-            </Button>
-          ) : null}
-        </nav>
+
       </header>
+
+      <MarketingMobileMenu
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        navItems={navItems}
+        user={user}
+      />
       <main className="flex-1">
         <Outlet />
       </main>

@@ -199,7 +199,10 @@
       "register": "Register",
       "logIn": "Log in",
       "patientHub": "Patient hub",
-      "practitionerHub": "Practitioner hub"
+      "practitionerHub": "Practitioner hub",
+      "menu": "Menu",
+      "explore": "Explore",
+      "getStarted": "Get started"
     },
     "newsletter": {
       "emailRequired": "Please enter your email.",

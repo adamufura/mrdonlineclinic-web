@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Bell,
   Calendar,
@@ -11,7 +11,6 @@ import {
   MessageSquare,
   MoreHorizontal,
   Plus,
-  Search,
   Stethoscope,
   UserCircle,
   X,
@@ -24,7 +23,6 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { HeaderProfileMenu } from '@/components/shared/header-profile-menu';
 import { UserAvatar } from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { logout } from '@/features/auth/api';
 import { getPatientMe } from '@/features/patients/api';
 import { cn } from '@/lib/utils/cn';
@@ -161,8 +159,6 @@ export function PatientLayout() {
   const clearSession = useAuthStore((s) => s.clearSession);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
-
   const displayName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Patient';
   const initial = (user?.firstName?.[0] ?? user?.email?.[0] ?? 'P').toUpperCase();
   const profilePhotoUrl = user?.profilePhotoUrl;
@@ -195,17 +191,6 @@ export function PatientLayout() {
       document.body.style.overflow = prev;
     };
   }, [mobileOpen]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
 
   const sidebarClass =
     'relative flex h-dvh w-[260px] shrink-0 flex-col gap-2 overflow-y-auto bg-gradient-to-b from-[#04132a] to-[#0a2545] px-[18px] pb-6 pt-6 before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_60%_30%_at_50%_0%,rgba(56,189,248,0.15),transparent_70%),radial-gradient(ellipse_50%_30%_at_50%_100%,rgba(94,234,212,0.1),transparent_70%)]';
@@ -275,19 +260,6 @@ export function PatientLayout() {
           >
             <Menu className="h-5 w-5" />
           </Button>
-
-          <div className="relative min-w-0 flex-1 max-lg:max-w-none lg:max-w-[460px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-muted-foreground" />
-            <Input
-              ref={searchRef}
-              type="search"
-              placeholder={t('layout.searchPatientPlaceholder')}
-              className="h-9 border-[#e2e8f0] bg-[#eef1f6] pl-9 pr-14 text-[13px] shadow-none focus-visible:border-sky-500 focus-visible:bg-white focus-visible:ring-sky-500/20"
-            />
-            <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-[#e2e8f0] bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline-block">
-              ⌘K
-            </kbd>
-          </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <LanguageSwitcher />

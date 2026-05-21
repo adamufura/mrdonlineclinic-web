@@ -99,7 +99,7 @@ export default function PatientRegisterPage() {
       </div>
 
       <form
-        className="mt-5 grid grid-cols-2 gap-3"
+        className="mt-5 grid grid-cols-1 gap-3"
         onSubmit={form.handleSubmit(({ firstName, lastName, email, phoneNumber, password }) => {
           mutation.mutate({ firstName, lastName, email, phoneNumber, password });
         })}
@@ -140,7 +140,7 @@ export default function PatientRegisterPage() {
           ) : null}
         </div>
 
-        <div className="col-span-2 space-y-1.5">
+        <div className="space-y-1.5">
           <Label htmlFor="email" className="text-[12px] font-medium text-slate-700">
             {t('auth.registerPatient.email')}
           </Label>
@@ -159,7 +159,7 @@ export default function PatientRegisterPage() {
           ) : null}
         </div>
 
-        <div className="col-span-2 space-y-1.5">
+        <div className="space-y-1.5">
           <Label htmlFor="phoneNumber" className="text-[12px] font-medium text-slate-700">
             {t('auth.registerPatient.phone')}
           </Label>
@@ -215,7 +215,7 @@ export default function PatientRegisterPage() {
           ) : null}
         </div>
 
-        <label className="col-span-2 flex cursor-pointer items-start gap-2.5 text-[12px] leading-snug text-brand-body sm:text-[13px]">
+        <label className="flex cursor-pointer items-start gap-2.5 text-[12px] leading-snug text-brand-body sm:text-[13px]">
           <input type="checkbox" className="mt-0.5 accent-sky-500" {...form.register('acceptTerms')} />
           <span>
             {t('auth.registerPatient.termsPrefix')}{' '}
@@ -230,13 +230,13 @@ export default function PatientRegisterPage() {
           </span>
         </label>
         {form.formState.errors.acceptTerms ? (
-          <p className="col-span-2 text-sm text-destructive">{form.formState.errors.acceptTerms.message}</p>
+          <p className="text-sm text-destructive">{form.formState.errors.acceptTerms.message}</p>
         ) : null}
 
         <Button
           type="submit"
           disabled={mutation.isPending}
-          className="col-span-2 mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sky-500 to-sky-800 text-[15px] font-semibold text-white shadow-[0_8px_20px_rgba(14,165,233,0.28)] transition hover:brightness-[1.03] disabled:opacity-60"
+          className="mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sky-500 to-sky-800 text-[15px] font-semibold text-white shadow-[0_8px_20px_rgba(14,165,233,0.28)] transition hover:brightness-[1.03] disabled:opacity-60"
         >
           {mutation.isPending ? (
             <>

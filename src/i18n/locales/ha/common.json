@@ -199,7 +199,10 @@
       "register": "Yi rajista",
       "logIn": "Shiga",
       "patientHub": "Cibiyar marar lafiya",
-      "practitionerHub": "Cibiyar mai aiki"
+      "practitionerHub": "Cibiyar mai aiki",
+      "menu": "Menu",
+      "explore": "Bincika",
+      "getStarted": "Fara yanzu"
     },
     "newsletter": {
       "emailRequired": "Da fatan za a shigar da imel.",
